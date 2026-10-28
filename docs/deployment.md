@@ -1,6 +1,6 @@
 # Circular — remise à l’infrastructure de l’école
 
-État du 28 octobre 2026. Les fichiers fournis préparent un déploiement ; aucune publication de registre, configuration du réseau de l’école ou mise en production distante n’a été effectuée. Les contrôles réellement exécutés sont dans [production-validation.md](production-validation.md).
+État du 28 octobre 2026. Les fichiers fournis préparent un déploiement ; aucune publication de registre, configuration du réseau de l’école ou mise en production distante n’a été effectuée. Voir la [validation des espaces, version 2.1](workspace-validation.md), et la [validation initiale, version 2.0](production-validation.md).
 
 ## Architecture livrée
 
@@ -22,7 +22,7 @@ Copier `.env.example` vers `.env` puis renseigner les valeurs **non secrètes** 
 | Variable | Rôle |
 | --- | --- |
 | `CIRCULAR_PUBLIC_URL` | Origine HTTPS exacte, par exemple `https://circular.ecole.example`, sans chemin ni identifiants |
-| `CIRCULAR_IMAGE_TAG` | Version livrée, actuellement `2.0.0` ; conserver les anciennes images pour le retour arrière |
+| `CIRCULAR_IMAGE_TAG` | Version livrée, actuellement `2.1.0` ; conserver les anciennes images pour le retour arrière |
 | `CIRCULAR_BIND_ADDRESS` | `127.0.0.1` si le proxy est sur le même hôte ; adapter explicitement pour un réseau privé de proxy |
 | `CIRCULAR_HTTP_PORT` | Port hôte de l’application, 4310 par défaut |
 | `CIRCULAR_SECRETS_DIR` | Répertoire privé des fichiers montés en secrets ; `./secrets` par défaut |
@@ -79,11 +79,11 @@ Les deux options servent le même code et le même schéma PostgreSQL. Le choix 
 Si le proxy réseau de l’école présente une CA interne, fournir un bundle public approuvé contenant les autorités nécessaires. Le Dockerfile accepte un secret BuildKit facultatif, valable uniquement pendant `npm ci` et `pip install` :
 
 ```bash
-docker build --secret id=build_ca,src=/chemin/approuve/ca-bundle.pem -t circular:2.0.0 .
+docker build --secret id=build_ca,src=/chemin/approuve/ca-bundle.pem -t circular:2.1.0 .
 docker compose -f compose.yaml -f compose.postgres.yaml up -d --no-build --wait
 ```
 
-Le certificat n’est pas copié dans l’image ; aucune option de désactivation TLS n’est utilisée. Un build sans cette option convient à un réseau utilisant les autorités publiques habituelles. Pour remettre une image sans registre : `docker save circular:2.0.0 -o circular-2.0.0.tar`, puis `docker load -i circular-2.0.0.tar` sur l’hôte cible. Le registre et le tag immuable de l’école peuvent remplacer cette procédure.
+Le certificat n’est pas copié dans l’image ; aucune option de désactivation TLS n’est utilisée. Un build sans cette option convient à un réseau utilisant les autorités publiques habituelles. Pour remettre une image sans registre : `docker save circular:2.1.0 -o circular-2.1.0.tar`, puis `docker load -i circular-2.1.0.tar` sur l’hôte cible. Le registre et le tag immuable de l’école peuvent remplacer cette procédure.
 
 ## Reverse proxy HTTPS et contrôle d’accès réseau
 
@@ -99,7 +99,9 @@ Superviser `GET /api/health` pour le processus et `GET /api/ready` pour l’acc�
 
 L’inscription nécessite un pseudo unique, une adresse dont le domaine est exactement `epita.fr`, et un mot de passe de 12 à 128 caractères. **Le domaine est contrôlé, la possession de l’adresse n’est pas vérifiée** : aucun SMTP, code de confirmation ou SSO n’est livré. Cette limite doit être acceptée par l’école avant ouverture publique ; un SSO ou une vérification mail est une évolution distincte.
 
-Chaque projet est privé par défaut. Son propriétaire invite un compte déjà inscrit ; la personne reçoit une invitation dans l’application et doit l’accepter. Les membres travaillent sur les tickets/commentaires ; le propriétaire gère le projet et ses accès. Préférences, vues, modèles et favoris restent personnels. Une suppression de membre retire son accès aux données du projet. Les contrôles sont dans l’API, indépendamment de l’affichage des boutons.
+Les comptes créent des espaces privés et peuvent y inviter des adresses EPITA, même avant leur inscription, ou partager un lien révocable valable sept jours. Les nouveaux projets sont accessibles aux membres de leur espace ; les projets historiques restent privés avec leurs accès existants. Une invitation limitée à un projet donne uniquement un accès d’invité à ce périmètre. Toute adhésion exige un compte connecté et une acceptation explicite. Préférences, vues et modèles sont personnels et séparés par espace. Un retrait de membre révoque ses accès et les invitations ciblées encore en attente ; les liens partagés doivent être révoqués séparément. Les contrôles sont dans l’API, indépendamment de l’affichage des boutons.
+
+La migration 005 ajoute les espaces et rattache les données existantes sans élargir les droits sur les anciens projets. Tester cette migration sur une restauration isolée avant la mise à jour ; elle n’a pas de downgrade automatique. GitHub et Slack sont des présentations « À venir » qui affichent une erreur explicite au clic, sans appel externe ni configuration de secret.
 
 Pas de collaboration en temps réel, notifications email, pièces jointes, administration générale ou récupération autonome du mot de passe. L’opérateur habilité peut réinitialiser un mot de passe dans un terminal interactif, avec saisie masquée :
 

@@ -13,7 +13,7 @@ from typing import Any
 # tables, counters and settings must never receive an implicit RETURNING id.
 IDENTITY_TABLES = frozenset({
     "projects", "issues", "labels", "comments", "saved_views", "issue_templates",
-    "issue_activity", "users", "project_invitations",
+    "issue_activity", "users", "project_invitations", "workspaces", "workspace_invitations", "workspace_invite_links",
 })
 
 

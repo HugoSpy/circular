@@ -1,11 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ArrowRight, LockKey, SignOut } from '@phosphor-icons/react';
-import { api, ApiError, setCsrfToken } from './api';
+import { api, ApiError, setCsrfToken, setWorkspaceId } from './api';
 import type { AuthSession, User } from './types';
 import { Dialog, ErrorMessage, message } from './ui';
 import './account-features.css';
 
-export function AuthGate({ children }: { children: (user: User, endSession: (notice?: string) => void) => ReactNode }) {
+export function AuthGate({ children }: { children: (user: User, endSession: (notice?: string) => void, updateUser: (user: User) => void) => ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,6 +18,7 @@ export function AuthGate({ children }: { children: (user: User, endSession: (not
   }
   function endSession(text = '') {
     setCsrfToken();
+    setWorkspaceId();
     setSession(null);
     setNotice(text);
     history.replaceState(null, '', location.pathname);
@@ -39,7 +40,7 @@ export function AuthGate({ children }: { children: (user: User, endSession: (not
   }, []);
   if (loading) return <main className="auth-shell"><div className="auth-card"><Brand /><p role="status">Ouverture de votre espace…</p></div></main>;
   if (error) return <main className="auth-shell"><div className="auth-card"><Brand /><h1>Connexion au serveur</h1><ErrorMessage>{error}</ErrorMessage><button className="button primary" onClick={() => setAttempt(value => value + 1)}>Réessayer</button></div></main>;
-  if (session) return children(session.user, endSession);
+  if (session) return children(session.user, endSession, user => setSession(current => current ? { ...current, user } : current));
   return <LoginForm notice={notice} onAuthenticated={authenticated} />;
 }
 
@@ -98,5 +99,5 @@ export function AccountDialog({ user, onClose, onSessionEnd }: { user: User; onC
     catch (error) { setError(message(error)); }
     finally { setPending(false); }
   }
-  return <Dialog title="Mon compte" onClose={onClose} dirty={dirty} pending={pending}><div className="form-body account-summary"><span className="account-avatar" aria-hidden="true">{user.username[0]?.toUpperCase()}</span><div><strong>{user.username}</strong><p>{user.email}</p></div><button className="button subtle" disabled={pending} onClick={() => void logout()}><SignOut size={17} />Se déconnecter</button></div><form onSubmit={event => { event.preventDefault(); void changePassword(); }} aria-busy={pending}><fieldset disabled={pending} className="form-body account-password"><h3><LockKey size={18} />Changer de mot de passe</h3><p className="field-hint">Vos sessions ouvertes seront fermées après le changement.</p><ErrorMessage>{error}</ErrorMessage><label>Mot de passe actuel<input type="password" autoComplete="current-password" required maxLength={128} value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} /></label><label>Nouveau mot de passe<input type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={password} onChange={event => setPassword(event.target.value)} /></label><label>Confirmer le nouveau mot de passe<input type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={confirm} onChange={event => setConfirm(event.target.value)} /></label><span className="field-hint">12 à 128 caractères.</span></fieldset><footer className="dialog-footer"><button type="submit" className="button primary" disabled={pending}>{pending ? 'Enregistrement…' : 'Changer le mot de passe'}</button></footer></form></Dialog>;
+  return <Dialog title="Mon compte" onClose={onClose} dirty={dirty} pending={pending}><div className="form-body account-summary"><span className="account-avatar" aria-hidden="true">{(user.displayName || user.username)[0]?.toUpperCase()}</span><div><strong>{user.displayName || user.username}</strong><p>{user.email}</p></div><button className="button subtle" disabled={pending} onClick={() => void logout()}><SignOut size={17} />Se déconnecter</button></div><form onSubmit={event => { event.preventDefault(); void changePassword(); }} aria-busy={pending}><fieldset disabled={pending} className="form-body account-password"><h3><LockKey size={18} />Changer de mot de passe</h3><p className="field-hint">Vos sessions ouvertes seront fermées après le changement.</p><ErrorMessage>{error}</ErrorMessage><label>Mot de passe actuel<input type="password" autoComplete="current-password" required maxLength={128} value={currentPassword} onChange={event => setCurrentPassword(event.target.value)} /></label><label>Nouveau mot de passe<input type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={password} onChange={event => setPassword(event.target.value)} /></label><label>Confirmer le nouveau mot de passe<input type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={confirm} onChange={event => setConfirm(event.target.value)} /></label><span className="field-hint">12 à 128 caractères.</span></fieldset><footer className="dialog-footer"><button type="submit" className="button primary" disabled={pending}>{pending ? 'Enregistrement…' : 'Changer le mot de passe'}</button></footer></form></Dialog>;
 }

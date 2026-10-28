@@ -52,7 +52,7 @@ class LocalSecurityMiddleware:
         if headers.get("sec-fetch-site") == "cross-site" and not allowed_origin:
             return await reject(403, "Requête intersite non autorisée.")
         if scope["method"] == "OPTIONS":
-            return await Response(status_code=204, headers={"Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, X-CSRF-Token"})(scope, receive, secure_send)
+            return await Response(status_code=204, headers={"Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, X-CSRF-Token, X-Workspace-Id"})(scope, receive, secure_send)
         if scope["method"] in {"POST", "PATCH", "PUT"}:
             if headers.get("content-type", "").split(";")[0].strip().lower() != "application/json":
                 return await reject(415, "Le contenu doit être au format application/json.")

@@ -24,11 +24,14 @@ class Client:
         self.cookies = http.cookiejar.CookieJar()
         self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.cookies))
         self.csrf = ""
+        self.workspace_id: int | None = None
 
     def call(self, method: str, path: str, payload=None, expected: int = 200):
         headers = {"Content-Type": "application/json"}
         if self.csrf:
             headers["X-CSRF-Token"] = self.csrf
+        if self.workspace_id is not None:
+            headers["X-Workspace-Id"] = str(self.workspace_id)
         body = json.dumps(payload if payload is not None else {}).encode() if method in {"POST", "PATCH"} else None
         request = urllib.request.Request(self.base + path, data=body, headers=headers, method=method)
         try:
@@ -95,11 +98,40 @@ def main() -> None:
     comment = bob.call("POST", f'/api/issues/{ticket["id"]}/comments', {"body": "Commentaire Docker persistant"}, 201)
     alice.call("PATCH", "/api/settings", {"fontSize": "large"})
     assert bob.call("GET", "/api/settings")["fontSize"] == "default"
+    # The new onboarding and workspace boundary run against the actual image,
+    # not an in-process test client. Account data remains fictitious.
+    alice.call("PATCH", "/api/auth/profile", {"displayName": "Profil Docker", "title": "Validation"})
+    spaces = [alice.call("POST", "/api/workspaces", {"name": f"Docker {name}", "slug": f"docker-{name.lower()}-{suffix}", "includeWelcomeIssues": name == "A"}, 201) for name in ("A", "B")]
+    workspace_a, workspace_b = [item["workspace"]["id"] for item in spaces]
+    alice.workspace_id = workspace_a
+    welcome = alice.call("GET", "/api/issues")
+    assert len(welcome) == 3
+    assert all(item["projectId"] == spaces[0]["project"]["id"] for item in welcome)
+    alice.call("PATCH", "/api/settings", {"fontSize": "small"})
+    alice.call("POST", f"/api/workspaces/{workspace_a}/onboarding/complete", {})
+    invitation = alice.call("POST", f"/api/workspaces/{workspace_a}/invitations", {"email": users[1]["email"]}, 201)
+    bob.call("POST", f'/api/workspace-invitations/{invitation["id"]}/accept', {})
+    bob.workspace_id = workspace_a
+    bob.call("PATCH", f'/api/issues/{welcome[0]["id"]}', {"status": "done"})
+    alice.workspace_id = workspace_b
+    assert alice.call("GET", "/api/issues") == []
+    alice.call("GET", f'/api/issues/{welcome[0]["id"]}', expected=404)
+    assert alice.call("GET", "/api/settings")["fontSize"] == "default"
+    bob.workspace_id = workspace_b
+    bob.call("GET", "/api/projects", expected=404)
+    alice.workspace_id = bob.workspace_id = None
     command(*compose, "restart", "postgres", "app")
     ready(args.url)
     assert alice.call("GET", f'/api/issues/{ticket["id"]}')["status"] == "in_progress"
     assert bob.call("GET", f'/api/issues/{ticket["id"]}/comments')[0]["body"] == "Commentaire Docker persistant"
     assert alice.call("GET", "/api/settings")["fontSize"] == "large"
+    assert alice.call("GET", "/api/auth/me")["user"]["displayName"] == "Profil Docker"
+    assert next(space for space in alice.call("GET", "/api/workspaces") if space["id"] == workspace_a)["onboardingCompleted"]
+    alice.workspace_id = workspace_a
+    assert alice.call("GET", "/api/settings")["fontSize"] == "small"
+    assert len(alice.call("GET", "/api/issues")) == 3
+    assert alice.call("GET", f'/api/issues/{welcome[0]["id"]}')["status"] == "done"
+    alice.workspace_id = None
     dump_directory = ROOT / ".test-data" / "docker-validation"
     dump_directory.mkdir(parents=True, exist_ok=True)
     backup = dump_directory / (suffix + ".dump")
@@ -111,7 +143,7 @@ def main() -> None:
     try:
         with backup.open("rb") as source:
             subprocess.run(["docker", "exec", "-i", postgres, "pg_restore", "-U", "circular_admin", "--no-owner", "--role=circular_app", "--exit-on-error", "-d", database], cwd=ROOT, stdin=source, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-        check = f"SELECT (SELECT COUNT(*) FROM users), (SELECT COUNT(*) FROM projects), (SELECT status FROM issues WHERE id={ticket['id']}), (SELECT body FROM comments WHERE id={comment['id']});"
+        check = f"SELECT (SELECT COUNT(*) FROM users), (SELECT COUNT(*) FROM projects), (SELECT status FROM issues WHERE id={ticket['id']}), (SELECT body FROM comments WHERE id={comment['id']}), (SELECT COUNT(*) FROM workspaces), (SELECT COUNT(*) FROM workspace_members), (SELECT payload FROM workspace_user_settings WHERE workspace_id={workspace_a} AND user_id={users[0]['id']});"
         original = command("docker", "exec", postgres, "psql", "-U", "circular_admin", "-d", "circular", "-Atc", check)
         restored = command("docker", "exec", postgres, "psql", "-U", "circular_admin", "-d", database, "-Atc", check)
         assert original == restored
@@ -123,11 +155,19 @@ def main() -> None:
     bob.call("GET", f'/api/issues/{ticket["id"]}', expected=404)
     alice.call("DELETE", f'/api/issues/{ticket["id"]}', expected=204)
     alice.call("DELETE", f'/api/projects/{project["id"]}', expected=204)
+    alice.call("DELETE", f'/api/workspaces/{workspace_a}/members/{users[1]["id"]}', expected=204)
+    bob.call("GET", f'/api/issues/{welcome[0]["id"]}', expected=404)
+    for item in spaces:
+        alice.workspace_id = item["workspace"]["id"]
+        for issue in alice.call("GET", "/api/issues"):
+            alice.call("DELETE", f'/api/issues/{issue["id"]}', expected=204)
+        alice.call("DELETE", f'/api/projects/{item["project"]["id"]}', expected=204)
+    alice.workspace_id = None
     command(*compose, "restart", "app")
     ready(args.url)
     alice.call("GET", f'/api/issues/{ticket["id"]}', expected=404)
     assert alice.call("GET", "/api/projects") == []
-    print(json.dumps({"httpCollaboration": "passed", "restartPersistence": "passed", "backupRestore": "passed", "revocationAndDeletion": "passed", "accountsCreated": 2}))
+    print(json.dumps({"httpCollaboration": "passed", "workspaceOnboardingAndIsolation": "passed", "restartPersistence": "passed", "backupRestore": "passed", "revocationAndDeletion": "passed", "accountsCreated": 2}))
 
 
 if __name__ == "__main__":

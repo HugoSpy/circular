@@ -7,6 +7,7 @@ import path from 'node:path';
 import { setTimeout as pause } from 'node:timers/promises';
 import { python, root } from '../../scripts/python-path.mjs';
 import { CircularPage } from './pages/circular-page';
+import { createEmptyWorkspace } from './workspace-setup';
 
 async function freePort(): Promise<number> {
   const socket = createServer();
@@ -122,10 +123,10 @@ export const test = base.extend<Fixtures>({
       username: 'Utilisateur de test', email: 'browser.test@epita.fr', password: 'Browser-test-passphrase-2026!',
     } });
     expect(registered.status()).toBe(201);
-    const session = await registered.json();
+    const workspace = await createEmptyWorkspace(page, server.url, 'browser-test');
     // The context's API request client shares the session cookie and these headers;
     // direct API setup in existing tests uses the same CSRF checks as the browser.
-    await context.setExtraHTTPHeaders({ 'X-CSRF-Token': session.csrfToken });
+    await context.setExtraHTTPHeaders(workspace.headers);
     const app = new CircularPage(page);
     await page.goto(server.url);
     await expect(page.getByRole('button', { name: 'Mon compte', exact: true })).toBeVisible();

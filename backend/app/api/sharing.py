@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from backend.app.api.auth import require_user
+from backend.app.api.scope import selected_workspace
 from backend.app.api.routes import Id
 from backend.app.services.sharing import SharingService
 
@@ -10,7 +11,8 @@ router = APIRouter(prefix="/api")
 
 
 def service(request: Request, user: Annotated[dict, Depends(require_user)]) -> SharingService:
-    return SharingService(request.app.state.database, user["id"])
+    workspace_id = selected_workspace(request, user["id"]) if request.url.path.startswith("/api/projects/") else None
+    return SharingService(request.app.state.database, user["id"], workspace_id)
 
 
 Service = Annotated[SharingService, Depends(service)]

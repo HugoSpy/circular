@@ -239,7 +239,7 @@ export function IssueDetail({ id, projects, labels, onClose, onSaved, onDeleted,
               <div className="ticket-actions-popover">
                 {onDuplicate && <button type="button" disabled={busy} onClick={() => void duplicate()}><Copy size={16} aria-hidden="true" />Dupliquer le ticket</button>}
                 <button type="button" disabled={busy} onClick={() => void copy(issue.identifier, 'Identifiant copié.')}><Copy size={16} aria-hidden="true" />Copier l’identifiant</button>
-                <button type="button" disabled={busy} onClick={() => void copy(`${location.origin}/?issue=${id}`, 'Lien copié.')}><Link size={16} aria-hidden="true" />Copier le lien</button>
+                <button type="button" disabled={busy} onClick={() => void copy(`${location.origin}${location.pathname}?${new URLSearchParams({ workspace: new URLSearchParams(location.search).get('workspace') || '', issue: String(id) })}`, 'Lien copié.')}><Link size={16} aria-hidden="true" />Copier le lien</button>
                 {onPageModeChange && <button type="button" disabled={busy} onClick={() => { if (actionsMenu.current) actionsMenu.current.open = false; onPageModeChange(!pageMode); }}><ArrowsOutSimple size={16} aria-hidden="true" />{pageMode ? 'Ouvrir en panneau' : 'Ouvrir en page'}</button>}
               </div>
             </details>
@@ -309,9 +309,9 @@ export function IssueDetail({ id, projects, labels, onClose, onSaved, onDeleted,
               <ol className="comment-list">
                 {comments.map(item => (
                   <li className="comment" key={item.id}>
-                    <span className="avatar" aria-hidden="true">{item.author?.username[0]?.toUpperCase() || '?'}</span>
+                    <span className="avatar" aria-hidden="true">{(item.author?.displayName || item.author?.username)?.[0]?.toUpperCase() || '?'}</span>
                     <div className="comment-main">
-                      <div className="comment-byline"><strong>{item.author?.username || 'Ancien commentaire'}</strong><time dateTime={item.createdAt}>{date(item.createdAt)}</time><div className="comment-edit-actions">{item.canEdit && <button type="button" className="icon-button" aria-label="Modifier le commentaire" disabled={busy} onClick={() => editComment(item)}><PencilSimple size={14} aria-hidden="true" /></button>}{item.canDelete && <button type="button" className="icon-button danger-icon" aria-label="Supprimer le commentaire" disabled={busy} onClick={() => void deleteComment(item)}><Trash size={14} aria-hidden="true" /></button>}</div></div>
+                      <div className="comment-byline"><strong>{item.author?.displayName || item.author?.username || 'Ancien commentaire'}</strong><time dateTime={item.createdAt}>{date(item.createdAt)}</time><div className="comment-edit-actions">{item.canEdit && <button type="button" className="icon-button" aria-label="Modifier le commentaire" disabled={busy} onClick={() => editComment(item)}><PencilSimple size={14} aria-hidden="true" /></button>}{item.canDelete && <button type="button" className="icon-button danger-icon" aria-label="Supprimer le commentaire" disabled={busy} onClick={() => void deleteComment(item)}><Trash size={14} aria-hidden="true" /></button>}</div></div>
                       {editing?.id === item.id ? <form className="comment-edit-form" onSubmit={event => { event.preventDefault(); void updateComment(); }} onKeyDown={event => commentKey(event, updateComment)}><label><span className="field-label">Modifier le texte du commentaire</span><textarea ref={editingInput} required disabled={busy} rows={3} maxLength={10000} value={editing.body} onChange={event => setEditing({ ...editing, body: event.target.value })} /></label><div className="comment-actions"><button type="button" className="button subtle" disabled={busy} onClick={() => { if (editing.body === editing.original || window.confirm('Abandonner la modification du commentaire ?')) setEditing(null); }}>Annuler</button><button type="submit" className="button" disabled={busy || !editing.body.trim() || editing.body === editing.original}>Enregistrer le commentaire</button></div></form> : <p>{item.body}</p>}
                     </div>
                   </li>
@@ -323,7 +323,7 @@ export function IssueDetail({ id, projects, labels, onClose, onSaved, onDeleted,
             <header className="comment-heading"><ClockCounterClockwise size={18} aria-hidden="true" /><h3 id={`activity-heading-${id}`}>Historique</h3></header>
             <ErrorMessage>{activityError}</ErrorMessage>
             {activityError && <button type="button" className="button subtle" disabled={busy} onClick={() => void refreshActivity()}>Recharger l’historique</button>}
-            {activityLoading ? <p className="field-hint" role="status">Chargement de l’historique…</p> : activity.length ? <ol className="activity-list">{activity.map(event => <li key={event.id}><span>{event.actor && <strong>{event.actor.username} · </strong>}{event.body}</span><time dateTime={event.createdAt}>{date(event.createdAt)}</time></li>)}</ol> : !activityError && <p className="comment-empty">Les prochains changements seront consignés ici.</p>}
+            {activityLoading ? <p className="field-hint" role="status">Chargement de l’historique…</p> : activity.length ? <ol className="activity-list">{activity.map(event => <li key={event.id}><span>{event.actor && <strong>{event.actor.displayName || event.actor.username} · </strong>}{event.body}</span><time dateTime={event.createdAt}>{date(event.createdAt)}</time></li>)}</ol> : !activityError && <p className="comment-empty">Les prochains changements seront consignés ici.</p>}
           </section>
         </div>
       )}

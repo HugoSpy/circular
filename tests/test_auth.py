@@ -60,7 +60,7 @@ def test_registration_hash_cookie_and_persisted_session(auth):
     client, service = auth
     response = register(client, " Alice@EPITA.FR ")
     assert set(response.json()) == {"user", "csrfToken"}
-    assert response.json()["user"] == {"id": 1, "email": "alice@epita.fr", "username": "Alice"}
+    assert response.json()["user"] == {"id": 1, "email": "alice@epita.fr", "username": "Alice", "displayName": "Alice", "title": "", "profileCompleted": False}
     assert "password" not in response.text and "token_hash" not in response.text
     cookie = response.headers["set-cookie"]
     assert "HttpOnly" in cookie and "SameSite=lax" in cookie

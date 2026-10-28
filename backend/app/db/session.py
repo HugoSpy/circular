@@ -80,6 +80,9 @@ class Database:
                         statement = ""
                 if statement.strip():
                     raise ValueError(f"Migration SQL incomplète : {migration.name}")
+                if migration.name == "005_workspaces.sql":
+                    from backend.app.db.backfill import backfill_workspaces
+                    backfill_workspaces(connection)
                 connection.execute("INSERT INTO schema_migrations VALUES (?, ?)", (migration.name, timestamp()))
 
     def _migrate_postgres(self) -> None:
@@ -103,4 +106,7 @@ class Database:
                         statement = ""
                 if statement.strip():
                     raise ValueError(f"Migration SQL incomplète : {migration.name}")
+                if migration.name == "005_workspaces.sql":
+                    from backend.app.db.backfill import backfill_workspaces
+                    backfill_workspaces(connection)
                 connection.execute("INSERT INTO schema_migrations VALUES (?, ?)", (migration.name, timestamp()))

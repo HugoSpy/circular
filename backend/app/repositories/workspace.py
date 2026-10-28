@@ -13,14 +13,29 @@ def search_text(identifier: str, title: str, description: str) -> str:
 
 
 class WorkspaceRepository:
-    def __init__(self, connection: sqlite3.Connection, user_id: int | None = None):
+    def __init__(self, connection: sqlite3.Connection, user_id: int | None = None, workspace_id: int | None = None):
         self.connection = connection
         self.user_id = user_id
+        self.workspace_id = workspace_id
 
     def access_clause(self, alias: str = "p") -> tuple[str, list]:
-        if self.user_id is None:
-            return "1 = 1", []
-        return f"({alias}.owner_user_id = ? OR EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = {alias}.id AND pm.user_id = ?))", [self.user_id, self.user_id]
+        clauses, values = [], []
+        if self.user_id is not None:
+            clauses.append(f"""({alias}.owner_user_id = ? OR EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = {alias}.id AND pm.user_id = ?)
+                OR ({alias}.visibility = 'workspace' AND EXISTS (SELECT 1 FROM workspace_members wm WHERE wm.workspace_id = {alias}.workspace_id AND wm.user_id = ? AND wm.role IN ('owner', 'member'))))""")
+            values.extend([self.user_id] * 3)
+            clauses.append(f"({alias}.workspace_id IS NULL OR EXISTS (SELECT 1 FROM workspace_members wm WHERE wm.workspace_id = {alias}.workspace_id AND wm.user_id = ?))")
+            values.append(self.user_id)
+        if self.workspace_id is not None:
+            clauses.append(f"{alias}.workspace_id = ?")
+            values.append(self.workspace_id)
+        return " AND ".join(clauses) or "1 = 1", values
+
+    def container_role(self) -> str | None:
+        if self.workspace_id is None:
+            return None
+        row = self.connection.execute("SELECT role FROM workspace_members WHERE workspace_id = ? AND user_id = ?", (self.workspace_id, self.user_id)).fetchone()
+        return row[0] if row else None
 
     def lock_issue(self, issue_id: int) -> None:
         if getattr(self.connection, "dialect", "sqlite") == "postgresql":
@@ -37,13 +52,14 @@ class WorkspaceRepository:
         if not self.connection.execute(f"SELECT id FROM projects p WHERE p.id = ? AND {access}", [project_id, *values]).fetchone():
             return None
         row = self.connection.execute("""SELECT p.id, p.name, p.key, p.description, p.color, p.status, p.due_date AS dueDate,
-            p.created_at AS createdAt, COUNT(i.id) AS issueCount,
+            p.created_at AS createdAt, p.workspace_id AS workspaceId, p.visibility, COUNT(i.id) AS issueCount,
             COALESCE(SUM(CASE WHEN i.status = 'done' THEN 1 ELSE 0 END), 0) AS doneCount
             FROM projects p LEFT JOIN issues i ON i.project_id = p.id WHERE p.id = ? GROUP BY p.id""", (project_id,)).fetchone()
         result = dict(row) if row else None
         if result is not None:
-            owner = self.connection.execute("SELECT owner_user_id FROM projects WHERE id = ?", (project_id,)).fetchone()[0]
-            result["role"] = "owner" if self.user_id is None or owner == self.user_id else "member"
+            owner = self.connection.execute("SELECT owner_user_id, visibility, workspace_id FROM projects WHERE id = ?", (project_id,)).fetchone()
+            workspace_owner = owner["visibility"] == "workspace" and self.connection.execute("SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ? AND role = 'owner'", (owner["workspace_id"], self.user_id)).fetchone()
+            result["role"] = "owner" if self.user_id is None or owner["owner_user_id"] == self.user_id or workspace_owner else "member"
         return result
 
     def projects(self) -> list[dict]:
@@ -52,8 +68,8 @@ class WorkspaceRepository:
 
     def create_project(self, data: dict) -> dict:
         self.connection.execute("INSERT INTO project_sequences(project_key) VALUES (?) ON CONFLICT DO NOTHING", (data["key"],))
-        result = self.connection.execute("INSERT INTO projects(name, key, description, color, status, due_date, created_at, owner_user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (data["name"], data["key"], data["description"], data["color"], data.get("status", "planned"), data.get("dueDate"), timestamp(), self.user_id))
+        result = self.connection.execute("INSERT INTO projects(name, key, description, color, status, due_date, created_at, owner_user_id, workspace_id, visibility) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (data["name"], data["key"], data["description"], data["color"], data.get("status", "planned"), data.get("dueDate"), timestamp(), self.user_id, self.workspace_id, "workspace" if self.workspace_id else "private"))
         return self.project(result.lastrowid)
 
     def update_project(self, project_id: int, data: dict) -> dict:
@@ -79,7 +95,7 @@ class WorkspaceRepository:
 
     def issues(self, filters: dict) -> list[dict]:
         clauses, values = [], []
-        if self.user_id is not None:
+        if self.user_id is not None or self.workspace_id is not None:
             access, access_values = self.access_clause()
             clauses.append(f"project_id IN (SELECT p.id FROM projects p WHERE {access})")
             values.extend(access_values)
@@ -158,6 +174,10 @@ class WorkspaceRepository:
     def label(self, label_id: int) -> dict | None:
         return next((label for label in self.labels() if label["id"] == label_id), None)
 
+    def label_workspace(self, label_id: int) -> int | None:
+        row = self.connection.execute("SELECT workspace_id FROM labels WHERE id = ?", (label_id,)).fetchone()
+        return row[0] if row else None
+
     def decode_label(self, row) -> dict:
         result = dict(row)
         owner = result.pop("owner_user_id")
@@ -168,20 +188,33 @@ class WorkspaceRepository:
         condition, values = "", []
         if self.user_id is not None:
             access, values = self.access_clause()
-            condition = f"WHERE l.owner_user_id = ? OR EXISTS (SELECT 1 FROM issue_labels il JOIN issues i ON i.id = il.issue_id JOIN projects p ON p.id = i.project_id WHERE il.label_id = l.id AND {access})"
+            condition = f"(l.owner_user_id = ? OR EXISTS (SELECT 1 FROM issue_labels il JOIN issues i ON i.id = il.issue_id JOIN projects p ON p.id = i.project_id WHERE il.label_id = l.id AND {access}))"
             values = [self.user_id, *values]
+            if self.workspace_id is not None:
+                if self.container_role() in {"owner", "member"}:
+                    condition, values = "l.workspace_id = ?", [self.workspace_id]
+                else:
+                    condition += " AND l.workspace_id = ?"
+                    values.append(self.workspace_id)
+            else:
+                condition += " AND (l.workspace_id IS NULL OR EXISTS (SELECT 1 FROM workspace_members wm WHERE wm.workspace_id = l.workspace_id AND wm.user_id = ?))"
+                values.append(self.user_id)
+            condition = "WHERE " + condition
         return [self.decode_label(row) for row in self.connection.execute(f"SELECT l.id, l.name, l.color, l.description, l.owner_user_id FROM labels l {condition} ORDER BY normalized_name", values)]
 
     def label_key(self, name: str) -> str:
-        return f"{self.user_id}:{normalize(name)}" if self.user_id is not None else normalize(name)
+        prefix = f"workspace:{self.workspace_id}:" if self.workspace_id is not None else ""
+        return prefix + (f"{self.user_id}:{normalize(name)}" if self.user_id is not None else normalize(name))
 
     def label_by_name(self, name: str) -> dict | None:
+        if self.workspace_id is not None:
+            return next((label for label in self.labels() if label["canEdit"] and normalize(label["name"]) == normalize(name)), None)
         row = self.connection.execute("SELECT id, name, color, description, owner_user_id FROM labels WHERE normalized_name = ?", (self.label_key(name),)).fetchone()
-        return self.decode_label(row) if row else None
+        return self.decode_label(row) if row and self.label(row["id"]) else None
 
     def create_label(self, data: dict) -> dict:
-        result = self.connection.execute("INSERT INTO labels(name, normalized_name, color, description, owner_user_id) VALUES (?, ?, ?, ?, ?)",
-            (data["name"], self.label_key(data["name"]), data["color"], data.get("description", ""), self.user_id))
+        result = self.connection.execute("INSERT INTO labels(name, normalized_name, color, description, owner_user_id, workspace_id) VALUES (?, ?, ?, ?, ?, ?)",
+            (data["name"], self.label_key(data["name"]), data["color"], data.get("description", ""), self.user_id, self.workspace_id))
         return self.label(result.lastrowid)
 
     def update_label(self, label_id: int, data: dict) -> dict:
@@ -215,7 +248,7 @@ class WorkspaceRepository:
         return result
 
     def person(self, user_id: int | None) -> dict | None:
-        row = self.connection.execute("SELECT id, username FROM users WHERE id = ?", (user_id,)).fetchone() if user_id else None
+        row = self.connection.execute("SELECT id, username, COALESCE(NULLIF(display_name, ''), username) AS displayName FROM users WHERE id = ?", (user_id,)).fetchone() if user_id else None
         return dict(row) if row else None
 
     def update_comment(self, issue_id: int, comment_id: int, body: str) -> dict:

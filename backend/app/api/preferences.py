@@ -6,12 +6,13 @@ from backend.app.schemas.responses import Error
 from backend.app.schemas.workspace import MAX_ID
 from backend.app.services.preferences import PreferencesService
 from backend.app.api.auth import require_user
+from backend.app.api.scope import selected_workspace
 
 router = APIRouter(prefix="/api", responses={status: {"model": Error} for status in (400, 403, 404, 409, 413, 415, 422)})
 
 
 def service(request: Request, user: Annotated[dict, Depends(require_user)]) -> PreferencesService:
-    return PreferencesService(request.app.state.database, user["id"])
+    return PreferencesService(request.app.state.database, user["id"], selected_workspace(request, user["id"]))
 
 
 Service = Annotated[PreferencesService, Depends(service)]

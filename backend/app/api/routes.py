@@ -6,12 +6,13 @@ from backend.app.schemas.preferences import SortBy, Direction
 from backend.app.schemas.responses import Project, Issue, Label, Comment, Error, Activity
 from backend.app.services.workspace import WorkspaceService, DomainError
 from backend.app.api.auth import require_user
+from backend.app.api.scope import selected_workspace
 
 router = APIRouter(prefix="/api", responses={status: {"model": Error} for status in (400, 403, 404, 409, 413, 415, 422)})
 
 
 def service(request: Request, user: Annotated[dict, Depends(require_user)]) -> WorkspaceService:
-    return WorkspaceService(request.app.state.database, user["id"])
+    return WorkspaceService(request.app.state.database, user["id"], selected_workspace(request, user["id"]))
 
 
 Service = Annotated[WorkspaceService, Depends(service)]

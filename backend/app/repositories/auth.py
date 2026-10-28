@@ -22,8 +22,8 @@ class AuthRepository:
         return dict(row) if row else None
 
     def create_user(self, email: str, username: str, password_hash: str) -> dict:
-        row = self.connection.execute("""INSERT INTO users(email, username, normalized_username, password_hash, created_at)
-            VALUES (?, ?, ?, ?, ?) RETURNING id""", (email, username, unicodedata.normalize("NFC", username).casefold(), password_hash, timestamp())).fetchone()
+        row = self.connection.execute("""INSERT INTO users(email, username, normalized_username, password_hash, created_at, display_name)
+            VALUES (?, ?, ?, ?, ?, ?) RETURNING id""", (email, username, unicodedata.normalize("NFC", username).casefold(), password_hash, timestamp(), username)).fetchone()
         return self.user(row["id"])
 
     def update_password(self, user_id: int, password_hash: str) -> None:
@@ -34,7 +34,7 @@ class AuthRepository:
             VALUES (?, ?, ?, ?, ?, ?)""", (token_hash, user_id, csrf, now, now, expires))
 
     def session(self, token_hash: str) -> dict | None:
-        row = self.connection.execute("""SELECT s.*, u.email, u.username, u.active FROM user_sessions s
+        row = self.connection.execute("""SELECT s.*, u.email, u.username, u.active, u.display_name, u.title, u.profile_completed FROM user_sessions s
             JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?""", (token_hash,)).fetchone()
         return dict(row) if row else None
 
@@ -55,3 +55,7 @@ class AuthRepository:
     def cleanup(self, now: int) -> None:
         self.connection.execute("DELETE FROM user_sessions WHERE expires_at <= ?", (now,))
         self.connection.execute("DELETE FROM auth_rate_limits WHERE expires_at <= ?", (now,))
+
+    def update_profile(self, user_id: int, data: dict) -> dict:
+        self.connection.execute("UPDATE users SET display_name = ?, title = ?, profile_completed = 1 WHERE id = ?", (data["displayName"], data["title"], user_id))
+        return self.user(user_id)

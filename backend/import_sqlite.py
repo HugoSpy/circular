@@ -9,17 +9,20 @@ from pathlib import Path
 import sqlite3
 from backend.app.core.config import database_target
 from backend.app.db.session import Database
+from backend.app.db.backfill import backfill_workspaces
 
 
 TABLES = (
-    "users", "project_sequences", "projects", "labels", "issues", "comments",
+    "users", "workspaces", "workspace_members", "project_sequences", "projects", "labels", "issues", "comments",
     "issue_labels", "workspace_settings", "saved_views", "issue_templates",
     "template_labels", "issue_activity", "project_members", "project_invitations",
-    "issue_favorites", "user_settings", "seed_runs",
+    "issue_favorites", "user_settings", "workspace_invitations", "workspace_invite_links",
+    "workspace_user_settings", "seed_runs",
 )
 IDENTITY_TABLES = (
     "users", "projects", "labels", "issues", "comments", "saved_views",
-    "issue_templates", "issue_activity", "project_invitations",
+    "issue_templates", "issue_activity", "project_invitations", "workspaces",
+    "workspace_invitations", "workspace_invite_links",
 )
 
 
@@ -69,11 +72,17 @@ def import_sqlite(source: Path, destination: Database) -> dict[str, int]:
                 while rows := cursor.fetchmany(500):
                     connection.executemany(f"INSERT INTO {quoted(table)} ({names}) VALUES ({placeholders})", [tuple(row) for row in rows])
                     count += len(rows)
+                if table == "users" and "display_name" not in source_columns:
+                    connection.execute("UPDATE users SET display_name = username, profile_completed = 1")
                 counts[table] = count
             for table in IDENTITY_TABLES:
                 # IDs remain stable, and future inserts continue above imported
                 # IDs rather than colliding with identity sequences starting at 1.
                 connection.execute(f"SELECT setval(pg_get_serial_sequence(?, 'id'), COALESCE((SELECT MAX(id) FROM {quoted(table)}), 1), EXISTS(SELECT 1 FROM {quoted(table)}))", (table,))
+            # Older snapshots have owners but no workspace columns. Apply the
+            # same idempotent transition as startup, inside this transaction.
+            # Unclaimed v1 rows remain private and unassigned until claim_legacy.
+            backfill_workspaces(connection)
         return counts
     finally:
         reader.close()

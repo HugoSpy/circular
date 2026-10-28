@@ -1,6 +1,7 @@
 import { test, expect } from './fixtures';
 import type { Page } from '@playwright/test';
 import { CircularPage } from './pages/circular-page';
+import { createEmptyWorkspace } from './workspace-setup';
 
 const password = 'Passphrase-test-2026!';
 async function register(page: Page, username: string) {
@@ -10,6 +11,9 @@ async function register(page: Page, username: string) {
   await page.getByLabel('Mot de passe', { exact: true }).fill(password);
   await page.getByLabel('Confirmer le mot de passe', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Créer mon compte', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Créer votre espace', exact: true })).toBeVisible();
+  await createEmptyWorkspace(page, new URL(page.url()).origin, username);
+  await page.reload();
   await expect(page.getByRole('button', { name: 'Mon compte', exact: true })).toBeVisible();
 }
 async function login(page: Page, identifier: string, secret = password) {
@@ -43,6 +47,9 @@ test('inscription EPITA, connexion pseudo, changement de mot de passe et déconn
   expect(await email.evaluate(element => (element as HTMLInputElement).validity.valid)).toBe(false);
   await email.fill('alice@epita.fr');
   await page.getByRole('button', { name: 'Créer mon compte', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Créer votre espace', exact: true })).toBeVisible();
+  await createEmptyWorkspace(page, server.url, 'alice');
+  await page.reload();
   await expect(page.getByRole('button', { name: 'Mon compte', exact: true })).toBeVisible();
   const app = new CircularPage(page);
   await app.createProject('Projet personnel', 'PRIV');
@@ -129,8 +136,9 @@ test('projet privé puis invitation acceptée, collaboration et révocation rée
   await register(page, 'membre');
   await expect(app.rows).toHaveCount(0);
   await page.goto(privateUrl);
-  await expect(page.getByRole('dialog').getByRole('alert')).toBeVisible();
-  await page.getByRole('dialog').getByRole('button', { name: 'Fermer', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Espace inaccessible', exact: true })).toBeVisible();
+  await expect(app.rows).toHaveCount(0);
+  await page.getByRole('button', { name: 'Ouvrir Espace membre', exact: true }).click();
   await logout(page);
   await login(page, 'proprietaire');
   const sharing = await members(page, 'Projet partagé');

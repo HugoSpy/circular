@@ -4,12 +4,22 @@ import sqlite3
 
 
 class PreferencesRepository:
-    def __init__(self, connection: sqlite3.Connection, user_id: int | None = None):
+    def __init__(self, connection: sqlite3.Connection, user_id: int | None = None, workspace_id: int | None = None):
         self.connection = connection
         self.user_id = user_id
+        self.workspace_id = workspace_id
 
     def scope(self) -> tuple[str, list]:
-        return ("owner_user_id = ?", [self.user_id]) if self.user_id is not None else ("1 = 1", [])
+        clauses, values = [], []
+        if self.user_id is not None:
+            clauses.append("owner_user_id = ?")
+            values.append(self.user_id)
+            clauses.append("(workspace_id IS NULL OR workspace_id IN (SELECT workspace_id FROM workspace_members WHERE user_id = ?))")
+            values.append(self.user_id)
+        if self.workspace_id is not None:
+            clauses.append("workspace_id = ?")
+            values.append(self.workspace_id)
+        return " AND ".join(clauses) or "1 = 1", values
 
     def lock_settings(self) -> None:
         # Lock the account, which exists even before its first settings row.
@@ -17,11 +27,16 @@ class PreferencesRepository:
             self.connection.execute("SELECT id FROM users WHERE id = ? FOR UPDATE", (self.user_id,)).fetchone()
 
     def settings(self) -> dict | None:
+        if self.workspace_id is not None:
+            row = self.connection.execute("SELECT payload FROM workspace_user_settings WHERE workspace_id = ? AND user_id = ?", (self.workspace_id, self.user_id)).fetchone()
+            return json.loads(row["payload"]) if row else None
         row = self.connection.execute("SELECT payload FROM user_settings WHERE user_id = ?", (self.user_id,)).fetchone() if self.user_id is not None else self.connection.execute("SELECT payload FROM workspace_settings WHERE id = 1").fetchone()
         return json.loads(row["payload"]) if row else None
 
     def save_settings(self, data: dict) -> dict:
-        if self.user_id is not None:
+        if self.workspace_id is not None:
+            self.connection.execute("INSERT INTO workspace_user_settings(workspace_id, user_id, payload) VALUES (?, ?, ?) ON CONFLICT(workspace_id, user_id) DO UPDATE SET payload = excluded.payload", (self.workspace_id, self.user_id, json.dumps(data, ensure_ascii=False)))
+        elif self.user_id is not None:
             self.connection.execute("INSERT INTO user_settings(user_id, payload) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET payload = excluded.payload", (self.user_id, json.dumps(data, ensure_ascii=False)))
         else:
             self.connection.execute("INSERT INTO workspace_settings(id, payload) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload", (json.dumps(data, ensure_ascii=False),))
@@ -40,7 +55,7 @@ class PreferencesRepository:
         return self.decode_view(self.connection.execute(f"SELECT * FROM saved_views WHERE id = ? AND {where}", [view_id, *values]).fetchone())
 
     def create_view(self, data: dict) -> dict:
-        result = self.connection.execute("INSERT INTO saved_views(name, filters, display, owner_user_id) VALUES (?, ?, ?, ?)", (data["name"], json.dumps(data["filters"]), json.dumps(data["display"]), self.user_id))
+        result = self.connection.execute("INSERT INTO saved_views(name, filters, display, owner_user_id, workspace_id) VALUES (?, ?, ?, ?, ?)", (data["name"], json.dumps(data["filters"]), json.dumps(data["display"]), self.user_id, self.workspace_id))
         return self.view(result.lastrowid)
 
     def update_view(self, view_id: int, data: dict) -> dict:
@@ -68,7 +83,7 @@ class PreferencesRepository:
         self.connection.executemany("INSERT INTO template_labels VALUES (?, ?)", [(template_id, label_id) for label_id in label_ids])
 
     def create_template(self, data: dict) -> dict:
-        result = self.connection.execute("INSERT INTO issue_templates(name, title, description, project_id, status, priority, owner_user_id) VALUES (?, ?, ?, ?, ?, ?, ?)", (data["name"], data["title"], data["description"], data["projectId"], data["status"], data["priority"], self.user_id))
+        result = self.connection.execute("INSERT INTO issue_templates(name, title, description, project_id, status, priority, owner_user_id, workspace_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (data["name"], data["title"], data["description"], data["projectId"], data["status"], data["priority"], self.user_id, self.workspace_id))
         self.replace_template_labels(result.lastrowid, data["labelIds"])
         return self.template(result.lastrowid)
 
@@ -99,6 +114,10 @@ class PreferencesRepository:
                 payload = json.loads(row["payload"])
                 payload["filters"] = clean(payload["filters"])
                 PreferencesRepository(self.connection, row["user_id"]).save_settings(payload)
+            for row in self.connection.execute("SELECT workspace_id, user_id, payload FROM workspace_user_settings").fetchall():
+                payload = json.loads(row["payload"])
+                payload["filters"] = clean(payload["filters"])
+                PreferencesRepository(self.connection, row["user_id"], row["workspace_id"]).save_settings(payload)
         for view in self.views():
             view["filters"] = clean(view["filters"])
             self.update_view(view["id"], view)

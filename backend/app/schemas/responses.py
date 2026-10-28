@@ -10,6 +10,8 @@ class Output(BaseModel):
 
 class Project(Output):
     id: int
+    workspaceId: int | None
+    visibility: Literal["private", "workspace"]
     name: str
     key: str
     description: str
@@ -48,6 +50,7 @@ class Issue(Output):
 class Person(Output):
     id: int
     username: str
+    displayName: str
 
 
 class Comment(Output):

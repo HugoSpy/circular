@@ -63,7 +63,10 @@ test('favori, copie de lien, page de détail et duplication persistante sans com
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('REU-1');
   await app.detail.getByRole('button', { name: 'Actions du ticket', exact: true }).click();
   await app.detail.getByRole('button', { name: 'Copier le lien', exact: true }).click();
-  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toMatch(/\/\?issue=\d+$/);
+  await expect.poll(async () => {
+    const copied = new URL(await page.evaluate(() => navigator.clipboard.readText()));
+    return { origin: copied.origin, issue: copied.searchParams.get('issue'), workspace: copied.searchParams.get('workspace') };
+  }).toEqual({ origin: server.url, issue: expect.stringMatching(/^\d+$/), workspace: 'browser-test' });
   const link = await page.evaluate(() => navigator.clipboard.readText());
   const sourceId = Number(new URL(link).searchParams.get('issue'));
   await page.goto(link);
