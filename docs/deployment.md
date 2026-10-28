@@ -113,7 +113,7 @@ Cette opération révoque toutes les sessions du compte. Un fichier secret mont�
 
 L’ancienne base n’est jamais publiée automatiquement aux nouveaux inscrits. Ses données sans propriétaire restent masquées tant qu’un opérateur n’a pas effectué d’attribution explicite. Sauvegarder le fichier SQLite backend arrêté avant l’import.
 
-Sur une **destination PostgreSQL vide**, monter la copie en lecture seule. Exemple Linux à adapter au chemin réel :
+Sur une **destination PostgreSQL vide**, monter la copie en lecture seule. Sous Linux, cette copie doit être lisible par l’UID `10001` du conteneur : placer par exemple la copie dans un dossier privé `0700` avec un fichier `0444`, puis monter uniquement le fichier. Ne pas modifier les permissions de la base originale. Exemple Linux à adapter au chemin réel :
 
 ```bash
 docker compose -f compose.yaml run --rm --no-deps --volume /chemin/copied/circular.sqlite:/import/source.sqlite:ro app python -m backend.import_sqlite /import/source.sqlite
