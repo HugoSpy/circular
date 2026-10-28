@@ -1,0 +1,38 @@
+services:
+  app:
+    depends_on:
+      postgres:
+        condition: service_healthy
+  postgres:
+    image: postgres:17-alpine@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: circular_admin
+      POSTGRES_DB: circular
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_admin_password
+    secrets:
+      - database_admin_password
+      - database_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres-init.sh:/docker-entrypoint-initdb.d/10-circular.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U circular_admin -d circular"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 1g
+    cpus: 2
+    pids_limit: 256
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  postgres_data:
+secrets:
+  database_admin_password:
+    file: ${CIRCULAR_SECRETS_DIR:-./secrets}/database_admin_password
+  database_password:
+    file: ${CIRCULAR_SECRETS_DIR:-./secrets}/database_password

@@ -1,0 +1,125 @@
+/* Workspace controls use the existing graphite and yellow design tokens. */
+.feature-toolbar { flex-wrap: wrap; }
+.toolbar-view-actions { display: flex; align-items: center; gap: 9px; margin-left: auto; flex-shrink: 0; }
+.more-filters.has-selection { color: var(--accent); border-color: #716037; background: var(--accent-soft); }
+.filter-count { display: inline-grid; place-items: center; min-width: 19px; height: 19px; border-radius: 4px; color: var(--accent); background: var(--accent-soft); font-size: 11px; }
+.feature-options > fieldset, .template-labels { margin: 0; padding: 0; border: 0; }
+.feature-options legend, .template-labels legend { padding: 0; margin-bottom: 10px; font-size: 12px; color: var(--muted); }
+.choice-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px 12px; }
+.check-option, .form-body .check-option { display: flex; flex-direction: row; align-items: center; gap: 8px; min-height: 36px; padding: 5px 7px; border-radius: 5px; font-size: 13px; font-weight: 400; overflow-wrap: anywhere; cursor: pointer; }
+.check-option:hover { background: var(--panel-hover); }
+.check-option input[type=checkbox], .preference-row input[type=checkbox] { width: 17px; height: 17px; min-height: 17px; flex: 0 0 17px; margin: 0; accent-color: var(--accent); }
+.check-option > svg, .check-option > .label-dot { flex-shrink: 0; }
+.group-toggle { display: inline-flex; align-items: center; gap: 8px; min-width: 0; min-height: 32px; padding: 3px 0; border: 0; background: transparent; text-align: left; }
+.group-toggle > span:last-child { color: var(--muted); font-size: 12px; }
+.group-toggle > svg:first-child { color: var(--muted); flex-shrink: 0; }
+.group-toggle h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.group-empty { margin: 0; padding: 16px 24px; font-size: 13px; color: var(--muted); }
+.issue-row-wrap { display: flex; align-items: center; border-bottom: 1px solid #292a31; min-width: 0; }
+.issue-row-wrap:hover { background: var(--panel); }
+.configurable-list .flexible-row { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1; width: auto; border-bottom: 0; }
+.configurable-list .issue-title { min-width: 60px; flex: 1; }
+.row-leading, .row-metadata { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.row-leading { flex-shrink: 0; }
+.row-leading:empty, .row-metadata:empty { display: none; }
+.row-metadata { justify-content: flex-end; flex-wrap: wrap; max-width: 50%; }
+.configurable-list .row-project { max-width: 150px; }
+.issue-row-wrap > .favorite-button { flex-shrink: 0; margin-right: 7px; }
+.favorite-button.is-favorite { color: var(--accent); }
+.issue-date { white-space: nowrap; color: var(--muted); font-size: 11px; }
+.issue-date.dueDate { color: #ddc679; }
+.date-label { font-size: 10px; }
+.hidden-columns-note { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0 var(--gutter) 10px; color: var(--muted); font-size: 12px; }
+.hidden-columns-note .filter-reset { margin: 0; }
+.configurable-board .board-heading { gap: 4px; }
+.configurable-board .board-heading .group-toggle { flex: 1; gap: 6px; }
+.configurable-board .board-heading .icon-button { margin-left: 0; min-width: 25px; min-height: 30px; padding: 4px; }
+.card-identity { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.card-identity .card-topline { flex: 1; gap: 8px; margin-bottom: 0; }
+.card-identity .favorite-button { min-width: 28px; min-height: 28px; }
+.card-dates { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
+.card-dates:empty { display: none; }
+.card-status-caption { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+
+.settings-view { display: grid; grid-template-columns: 190px minmax(0,1fr); gap: 32px; padding: 0 var(--gutter) 30px; }
+.settings-tabs { display: flex; flex-direction: column; align-items: stretch; gap: 5px; }
+.settings-tabs button { display: flex; align-items: center; gap: 9px; padding: 10px; min-height: 40px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--muted); font-size: 13px; text-align: left; }
+.settings-tabs button:hover { color: var(--text); background: var(--panel); }
+.settings-tabs button.active { color: var(--accent); border-color: #4b4229; background: var(--accent-soft); }
+.settings-tabs button > span { margin-left: auto; font-size: 11px; }
+.settings-content { min-width: 0; max-width: 900px; }
+.settings-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; padding-bottom: 20px; }
+.settings-heading h2 { margin: 3px 0 7px; font-size: 18px; font-weight: 550; }
+.settings-heading p { margin: 0; font-size: 13px; color: var(--muted); }
+.preferences-fields { margin: 0; padding: 0; border: 0; }
+.preference-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 21px 0; border-top: 1px solid var(--line); }
+.preference-row strong { display: block; font-weight: 500; font-size: 14px; }
+.preference-row small { display: block; max-width: 420px; margin-top: 5px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.preference-row select { max-width: 250px; width: 40%; font-size: 13px; }
+.settings-save { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 22px 0; border-top: 1px solid var(--line); }
+.settings-notice { padding: 11px 14px; margin: 0 0 18px; border: 1px solid #5d5130; border-radius: 6px; background: var(--accent-soft); color: #f1dc99; font-size: 13px; }
+.settings-search { max-width: 400px; margin-bottom: 20px; }
+.settings-record { display: flex; align-items: center; gap: 14px; padding: 18px 0; border-top: 1px solid var(--line); }
+.settings-record > svg { flex-shrink: 0; color: var(--muted); }
+.settings-label-dot { width: 12px; height: 12px; flex-shrink: 0; }
+.settings-record-copy { min-width: 0; flex: 1; }
+.settings-record-copy h3 { margin: 0 0 5px; font-size: 14px; font-weight: 500; }
+.settings-record-copy p { margin: 0; color: var(--muted); font-size: 12px; white-space: pre-wrap; }
+.settings-empty { padding: 32px 0; margin: 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+
+:root[data-font-size=small] { --workspace-font-scale: .93; }
+:root[data-font-size=default] { --workspace-font-scale: 1; }
+:root[data-font-size=large] { --workspace-font-scale: 1.14; }
+:root[data-font-size] .issue-title, :root[data-font-size] .card-open h3 { font-size: calc(14px * var(--workspace-font-scale)); }
+:root[data-font-size] .button, :root[data-font-size] .nav-item, :root[data-font-size] .settings-tabs button, :root[data-font-size] .preference-row select, :root[data-font-size] .filter-select, :root[data-font-size] .check-option { font-size: calc(13px * var(--workspace-font-scale)); }
+:root[data-font-size] .group-toggle h2, :root[data-font-size] .issue-identifier, :root[data-font-size] .row-project, :root[data-font-size] .card-status { font-size: calc(12px * var(--workspace-font-scale)); }
+:root[data-font-size] .form-body label, :root[data-font-size] .preference-row strong { font-size: calc(14px * var(--workspace-font-scale)); }
+:root[data-density=comfortable] .configurable-list .issue-row { min-height: 64px; padding-top: 15px; padding-bottom: 15px; }
+:root[data-density=comfortable] .issue-card { padding: 18px 15px 14px; margin-bottom: 14px; }
+:root[data-density=comfortable] .nav-item { min-height: 44px; }
+:root[data-reduce-motion=true] *, :root[data-reduce-motion=true] *::before, :root[data-reduce-motion=true] *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+@media (max-width: 1000px) {
+  .settings-view { grid-template-columns: 150px minmax(0,1fr); gap: 20px; }
+  .settings-heading { flex-wrap: wrap; }
+  .preference-row { gap: 16px; }
+  .preference-row select { width: 45%; }
+}
+@media (max-width: 767px) {
+  .toolbar-view-actions { width: 100%; justify-content: space-between; }
+  .toolbar-view-actions .view-switch { margin-left: 0; }
+  .more-filters { grid-column: 1/-1; justify-self: start; }
+  .choice-grid { gap: 8px; }
+  .check-option, .form-body .check-option { min-height: 44px; font-size: 14px; }
+  .configurable-list .flexible-row { flex-wrap: wrap; gap: 7px; padding: 12px 4px 12px 10px; }
+  .configurable-list .issue-title { flex-basis: 100%; order: 2; grid-column: auto; grid-row: auto; }
+  .configurable-list .row-metadata { flex-basis: 100%; order: 3; max-width: 100%; justify-content: flex-start; gap: 8px; }
+  .configurable-list .row-leading { max-width: 100%; }
+  .configurable-list .row-project { grid-column: auto; grid-row: auto; }
+  .configurable-list .row-labels { display: flex; grid-column: auto; }
+  .issue-row-wrap { align-items: flex-start; }
+  .issue-row-wrap > .favorite-button { margin: 5px 3px 0 0; }
+  .configurable-board .board-heading .icon-button { min-width: 36px; min-height: 44px; }
+  .configurable-board .board-heading { flex-wrap: wrap; }
+  .configurable-board .group-toggle { min-height: 44px; }
+  .card-identity .favorite-button { min-width: 44px; min-height: 44px; }
+  .settings-view { display: block; }
+  .settings-tabs { flex-direction: row; margin: 0 0 24px; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+  .settings-tabs button { flex: 1; justify-content: center; padding: 8px 5px; min-height: 44px; gap: 5px; }
+  .settings-tabs button > span { display: none; }
+  .settings-heading { gap: 15px; }
+  .settings-heading h2 { font-size: 18px; }
+  .preference-row { gap: 14px; flex-wrap: wrap; }
+  .preference-row > span { flex: 1; min-width: 200px; }
+  .preference-row select { width: 100%; max-width: none; font-size: 16px; }
+  .preference-row input[type=checkbox] { width: 22px; height: 22px; flex-basis: 22px; }
+  .settings-record { align-items: flex-start; gap: 10px; }
+  .settings-record > .settings-label-dot { margin-top: 7px; }
+  .settings-record > svg { margin-top: 3px; }
+  .settings-record > button { min-height: 44px; padding: 6px 8px; }
+  .settings-record > button svg { display: none; }
+  .settings-save { align-items: stretch; }
+  .settings-save .button { width: 100%; }
+  :root[data-font-size] .filter-select { font-size: 13px; }
+  :root[data-font-size] .card-status { font-size: 16px; }
+  :root[data-font-size] .preference-row select { font-size: 16px; }
+}

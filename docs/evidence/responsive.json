@@ -1,0 +1,130 @@
+[
+  {
+    "width": 320,
+    "page": "list",
+    "overflow": false
+  },
+  {
+    "width": 320,
+    "page": "create",
+    "overflow": false
+  },
+  {
+    "width": 320,
+    "page": "board",
+    "overflow": false
+  },
+  {
+    "width": 320,
+    "page": "detail",
+    "overflow": false
+  },
+  {
+    "width": 320,
+    "page": "projects",
+    "overflow": false
+  },
+  {
+    "width": 390,
+    "page": "list",
+    "overflow": false
+  },
+  {
+    "width": 390,
+    "page": "create",
+    "overflow": false
+  },
+  {
+    "width": 390,
+    "page": "board",
+    "overflow": false
+  },
+  {
+    "width": 390,
+    "page": "detail",
+    "overflow": false
+  },
+  {
+    "width": 390,
+    "page": "projects",
+    "overflow": false
+  },
+  {
+    "width": 768,
+    "page": "list",
+    "overflow": false
+  },
+  {
+    "width": 768,
+    "page": "create",
+    "overflow": false
+  },
+  {
+    "width": 768,
+    "page": "board",
+    "overflow": false
+  },
+  {
+    "width": 768,
+    "page": "detail",
+    "overflow": false
+  },
+  {
+    "width": 768,
+    "page": "projects",
+    "overflow": false
+  },
+  {
+    "width": 1024,
+    "page": "list",
+    "overflow": false
+  },
+  {
+    "width": 1024,
+    "page": "create",
+    "overflow": false
+  },
+  {
+    "width": 1024,
+    "page": "board",
+    "overflow": false
+  },
+  {
+    "width": 1024,
+    "page": "detail",
+    "overflow": false
+  },
+  {
+    "width": 1024,
+    "page": "projects",
+    "overflow": false
+  },
+  {
+    "width": 1440,
+    "page": "list",
+    "overflow": false
+  },
+  {
+    "width": 1440,
+    "page": "create",
+    "overflow": false
+  },
+  {
+    "width": 1440,
+    "page": "board",
+    "overflow": false
+  },
+  {
+    "width": 1440,
+    "page": "detail",
+    "overflow": false
+  },
+  {
+    "width": 1440,
+    "page": "projects",
+    "overflow": false
+  },
+  {
+    "reducedMotion": "0s"
+  }
+]

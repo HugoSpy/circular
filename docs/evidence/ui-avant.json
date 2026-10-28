@@ -1,0 +1,630 @@
+{
+  "errors": [],
+  "external": [],
+  "measurements": {
+    "list1440": [
+      {
+        "selector": ".page-heading",
+        "font": "16px",
+        "width": 1208,
+        "height": 164,
+        "top": 60,
+        "color": "rgb(227, 229, 226)",
+        "background": [
+          21,
+          23,
+          22
+        ],
+        "contrast": 14.21
+      },
+      {
+        "selector": ".issue-title",
+        "font": "12px",
+        "width": 853,
+        "height": 16,
+        "top": 366,
+        "color": "rgb(203, 213, 206)",
+        "background": [
+          21,
+          23,
+          22
+        ],
+        "contrast": 11.96
+      },
+      {
+        "selector": ".issue-identifier",
+        "font": "10px",
+        "width": 67,
+        "height": 12,
+        "top": 368,
+        "color": "rgb(129, 145, 135)",
+        "background": [
+          21,
+          23,
+          22
+        ],
+        "contrast": 5.43
+      },
+      {
+        "selector": ".label-pill",
+        "font": "9px",
+        "width": 86,
+        "height": 20,
+        "top": 364,
+        "color": "rgb(165, 184, 170)",
+        "background": [
+          21,
+          23,
+          22
+        ],
+        "contrast": 8.61
+      },
+      {
+        "selector": ".row-project",
+        "font": "10px",
+        "width": 46,
+        "height": 14,
+        "top": 367,
+        "color": "rgb(130, 148, 138)",
+        "background": [
+          21,
+          23,
+          22
+        ],
+        "contrast": 5.62
+      },
+      {
+        "selector": ".filter-select",
+        "font": "10px",
+        "width": 124,
+        "height": 34,
+        "top": 224,
+        "color": "rgb(165, 184, 171)",
+        "background": [
+          28,
+          35,
+          30
+        ],
+        "contrast": 7.68
+      },
+      {
+        "selector": ".icon-button",
+        "font": "10px",
+        "width": 25,
+        "height": 25,
+        "top": 252,
+        "color": "rgb(160, 170, 162)",
+        "background": [
+          27,
+          30,
+          28
+        ],
+        "contrast": 7.02
+      },
+      {
+        "selector": ".search-field input",
+        "font": "11px",
+        "width": 155,
+        "height": 31,
+        "top": 226,
+        "color": "rgb(220, 231, 223)",
+        "background": [
+          28,
+          35,
+          30
+        ],
+        "contrast": 12.64
+      },
+      {
+        "selector": ".button.primary",
+        "font": "11px",
+        "width": 124,
+        "height": 33,
+        "top": 130,
+        "color": "rgb(23, 51, 35)",
+        "background": [
+          161,
+          216,
+          186
+        ],
+        "contrast": 8.5
+      },
+      {
+        "selector": ".card-status",
+        "absent": true
+      },
+      {
+        "selector": ".sidebar-private",
+        "font": "11px",
+        "width": 175,
+        "height": 15,
+        "top": 925,
+        "color": "rgb(111, 124, 115)",
+        "background": [
+          27,
+          30,
+          28
+        ],
+        "contrast": 3.85
+      },
+      {
+        "selector": ".comment-empty",
+        "absent": true
+      },
+      {
+        "selector": ".group-header",
+        "font": "16px",
+        "width": 1208,
+        "height": 40,
+        "top": 311,
+        "color": "rgb(227, 229, 226)",
+        "background": [
+          29,
+          34,
+          30
+        ],
+        "contrast": 12.75
+      }
+    ],
+    "board1440": [
+      {
+        "selector": ".page-heading",
+        "font": "16px",
+        "width": 1208,
+        "height": 164,
+        "top": 60,
+        "color": "rgb(227, 229, 226)",
+        "background": [
+          21,
+          23,
+          22
+        ],
+        "contrast": 14.21
+      },
+      {
+        "selector": ".issue-title",
+        "absent": true
+      },
+      {
+        "selector": ".issue-identifier",
+        "font": "10px",
+        "width": 67,
+        "height": 12,
+        "top": 377,
+        "color": "rgb(129, 145, 135)",
+        "background": [
+          36,
+          44,
+          38
+        ],
+        "contrast": 4.33
+      },
+      {
+        "selector": ".label-pill",
+        "font": "9px",
+        "width": 86,
+        "height": 20,
+        "top": 450,
+        "color": "rgb(165, 184, 170)",
+        "background": [
+          36,
+          44,
+          38
+        ],
+        "contrast": 6.86
+      },
+      {
+        "selector": ".row-project",
+        "absent": true
+      },
+      {
+        "selector": ".filter-select",
+        "font": "10px",
+        "width": 124,
+        "height": 34,
+        "top": 224,
+        "color": "rgb(165, 184, 171)",
+        "background": [
+          28,
+          35,
+          30
+        ],
+        "contrast": 7.68
+      },
+      {
+        "selector": ".icon-button",
+        "font": "10px",
+        "width": 25,
+        "height": 25,
+        "top": 252,
+        "color": "rgb(160, 170, 162)",
+        "background": [
+          27,
+          30,
+          28
+        ],
+        "contrast": 7.02
+      },
+      {
+        "selector": ".search-field input",
+        "font": "11px",
+        "width": 155,
+        "height": 31,
+        "top": 226,
+        "color": "rgb(220, 231, 223)",
+        "background": [
+          28,
+          35,
+          30
+        ],
+        "contrast": 12.64
+      },
+      {
+        "selector": ".button.primary",
+        "font": "11px",
+        "width": 124,
+        "height": 33,
+        "top": 130,
+        "color": "rgb(23, 51, 35)",
+        "background": [
+          161,
+          216,
+          186
+        ],
+        "contrast": 8.5
+      },
+      {
+        "selector": ".card-status",
+        "font": "9px",
+        "width": 63,
+        "height": 20,
+        "top": 493,
+        "color": "rgb(162, 186, 169)",
+        "background": [
+          45,
+          57,
+          48
+        ],
+        "contrast": 5.83
+      },
+      {
+        "selector": ".sidebar-private",
+        "font": "11px",
+        "width": 175,
+        "height": 15,
+        "top": 925,
+        "color": "rgb(111, 124, 115)",
+        "background": [
+          27,
+          30,
+          28
+        ],
+        "contrast": 3.85
+      },
+      {
+        "selector": ".comment-empty",
+        "absent": true
+      },
+      {
+        "selector": ".group-header",
+        "absent": true
+      }
+    ],
+    "detail1440": [
+      {
+        "selector": ".page-heading",
+        "font": "16px",
+        "width": 1208,
+        "height": 164,
+        "top": 60,
+        "color": "rgb(227, 229, 226)",
+        "background": [
+          21,
+          23,
+          22
+        ],
+        "contrast": 14.21
+      },
+      {
+        "selector": ".issue-title",
+        "absent": true
+      },
+      {
+        "selector": ".issue-identifier",
+        "font": "10px",
+        "width": 67,
+        "height": 12,
+        "top": 377,
+        "color": "rgb(129, 145, 135)",
+        "background": [
+          36,
+          44,
+          38
+        ],
+        "contrast": 4.33
+      },
+      {
+        "selector": ".label-pill",
+        "font": "9px",
+        "width": 86,
+        "height": 20,
+        "top": 450,
+        "color": "rgb(165, 184, 170)",
+        "background": [
+          36,
+          44,
+          38
+        ],
+        "contrast": 6.86
+      },
+      {
+        "selector": ".row-project",
+        "absent": true
+      },
+      {
+        "selector": ".filter-select",
+        "font": "10px",
+        "width": 124,
+        "height": 34,
+        "top": 224,
+        "color": "rgb(165, 184, 171)",
+        "background": [
+          28,
+          35,
+          30
+        ],
+        "contrast": 7.68
+      },
+      {
+        "selector": ".icon-button",
+        "font": "10px",
+        "width": 25,
+        "height": 25,
+        "top": 252,
+        "color": "rgb(160, 170, 162)",
+        "background": [
+          27,
+          30,
+          28
+        ],
+        "contrast": 7.02
+      },
+      {
+        "selector": ".search-field input",
+        "font": "11px",
+        "width": 155,
+        "height": 31,
+        "top": 226,
+        "color": "rgb(220, 231, 223)",
+        "background": [
+          28,
+          35,
+          30
+        ],
+        "contrast": 12.64
+      },
+      {
+        "selector": ".button.primary",
+        "font": "11px",
+        "width": 124,
+        "height": 33,
+        "top": 130,
+        "color": "rgb(23, 51, 35)",
+        "background": [
+          161,
+          216,
+          186
+        ],
+        "contrast": 8.5
+      },
+      {
+        "selector": ".card-status",
+        "font": "9px",
+        "width": 63,
+        "height": 20,
+        "top": 493,
+        "color": "rgb(162, 186, 169)",
+        "background": [
+          45,
+          57,
+          48
+        ],
+        "contrast": 5.83
+      },
+      {
+        "selector": ".sidebar-private",
+        "font": "11px",
+        "width": 175,
+        "height": 15,
+        "top": 925,
+        "color": "rgb(111, 124, 115)",
+        "background": [
+          27,
+          30,
+          28
+        ],
+        "contrast": 3.85
+      },
+      {
+        "selector": ".comment-empty",
+        "font": "11px",
+        "width": 561,
+        "height": 57,
+        "top": 759,
+        "color": "rgb(123, 146, 131)",
+        "background": [
+          32,
+          38,
+          34
+        ],
+        "contrast": 4.61
+      },
+      {
+        "selector": ".group-header",
+        "absent": true
+      }
+    ],
+    "mobile390": [
+      {
+        "selector": ".page-heading",
+        "font": "16px",
+        "width": 390,
+        "height": 138,
+        "top": 153,
+        "color": "rgb(227, 229, 226)",
+        "background": [
+          21,
+          23,
+          22
+        ],
+        "contrast": 14.21
+      },
+      {
+        "selector": ".issue-title",
+        "font": "12px",
+        "width": 324,
+        "height": 18,
+        "top": 535,
+        "color": "rgb(203, 213, 206)",
+        "background": [
+          21,
+          23,
+          22
+        ],
+        "contrast": 11.96
+      },
+      {
+        "selector": ".issue-identifier",
+        "font": "10px",
+        "width": 67,
+        "height": 12,
+        "top": 511,
+        "color": "rgb(129, 145, 135)",
+        "background": [
+          21,
+          23,
+          22
+        ],
+        "contrast": 5.43
+      },
+      {
+        "selector": ".label-pill",
+        "font": "9px",
+        "width": 86,
+        "height": 20,
+        "top": 563,
+        "color": "rgb(165, 184, 170)",
+        "background": [
+          21,
+          23,
+          22
+        ],
+        "contrast": 8.61
+      },
+      {
+        "selector": ".row-project",
+        "font": "9px",
+        "width": 42,
+        "height": 12,
+        "top": 511,
+        "color": "rgb(130, 148, 138)",
+        "background": [
+          21,
+          23,
+          22
+        ],
+        "contrast": 5.62
+      },
+      {
+        "selector": ".filter-select",
+        "font": "9px",
+        "width": 112,
+        "height": 32,
+        "top": 336,
+        "color": "rgb(165, 184, 171)",
+        "background": [
+          28,
+          35,
+          30
+        ],
+        "contrast": 7.68
+      },
+      {
+        "selector": ".icon-button",
+        "font": "10px",
+        "width": 25,
+        "height": 25,
+        "top": 118,
+        "color": "rgb(160, 170, 162)",
+        "background": [
+          21,
+          23,
+          22
+        ],
+        "contrast": 7.52
+      },
+      {
+        "selector": ".search-field input",
+        "font": "12px",
+        "width": 306,
+        "height": 36,
+        "top": 292,
+        "color": "rgb(220, 231, 223)",
+        "background": [
+          28,
+          35,
+          30
+        ],
+        "contrast": 12.64
+      },
+      {
+        "selector": ".button.primary",
+        "font": "0px",
+        "width": 42,
+        "height": 35,
+        "top": 181,
+        "color": "rgb(23, 51, 35)",
+        "background": [
+          161,
+          216,
+          186
+        ],
+        "contrast": 8.5
+      },
+      {
+        "selector": ".card-status",
+        "absent": true
+      },
+      {
+        "selector": ".sidebar-private",
+        "absent": true
+      },
+      {
+        "selector": ".comment-empty",
+        "absent": true
+      },
+      {
+        "selector": ".group-header",
+        "font": "16px",
+        "width": 390,
+        "height": 40,
+        "top": 457,
+        "color": "rgb(227, 229, 226)",
+        "background": [
+          29,
+          34,
+          30
+        ],
+        "contrast": 12.75
+      }
+    ]
+  },
+  "screens": [
+    "list",
+    "board",
+    "detail",
+    "projects",
+    "mobile"
+  ],
+  "mobileOverflow": false
+}
