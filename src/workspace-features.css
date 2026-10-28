@@ -103,8 +103,8 @@
   .configurable-board .group-toggle { min-height: 44px; }
   .card-identity .favorite-button { min-width: 44px; min-height: 44px; }
   .settings-view { display: block; }
-  .settings-tabs { flex-direction: row; margin: 0 0 24px; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
-  .settings-tabs button { flex: 1; justify-content: center; padding: 8px 5px; min-height: 44px; gap: 5px; }
+  .settings-tabs { flex-direction: row; margin: 0 0 24px; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 10px; max-width: 100%; overflow-x: auto; }
+  .settings-tabs button { flex: 0 0 auto; justify-content: center; padding: 8px 10px; min-height: 44px; gap: 5px; }
   .settings-tabs button > span { display: none; }
   .settings-heading { gap: 15px; }
   .settings-heading h2 { font-size: 18px; }

@@ -1,12 +1,12 @@
 # Circular
 
-Gestion de projets et de tickets avec **comptes utilisateurs et projets privés partageables sur invitation**. Interface React/TypeScript graphite et jaune, backend FastAPI en couches, **PostgreSQL en production**. Docker fournit le frontend compilé et l’API dans une même image. Aucun appel à Linear ni clé API externe.
+Gestion de projets et de tickets avec **comptes utilisateurs et espaces privés partageables sur invitation**. Interface React/TypeScript graphite et jaune, backend FastAPI en couches, **PostgreSQL en production**. Docker fournit le frontend compilé et l’API dans une même image. Aucun appel à Linear ni clé API externe.
 
 Code publié sous [licence MIT](LICENSE), avec [notices des dépendances](THIRD_PARTY_NOTICES.md). Dépôt : [HugoSpy/circular](https://github.com/HugoSpy/circular).
 
 ## Livraison à l’infrastructure de l’école
 
-Le [guide de déploiement](docs/deployment.md) est le document à transmettre à l’infra : secrets, HTTPS/reverse proxy, PostgreSQL fourni ou externe, sauvegarde/restauration, mises à jour et retour arrière. Le [rapport de validation](docs/production-validation.md) distingue les vérifications exécutées des opérations restant à réaliser sur l’environnement de l’école.
+Le [guide de déploiement](docs/deployment.md) est le document à transmettre à l’infra : secrets, HTTPS/reverse proxy, PostgreSQL fourni ou externe, sauvegarde/restauration, mises à jour et retour arrière. Le [rapport de validation 2.1](docs/workspace-validation.md) distingue les vérifications exécutées des opérations restant à réaliser sur l’environnement de l’école.
 
 Fichiers livrés :
 
@@ -27,7 +27,7 @@ python scripts/init-secrets.py
 docker compose -f compose.yaml -f compose.postgres.yaml -f compose.local.yaml up -d --build
 ```
 
-Ouvrir **http://127.0.0.1:4310**, créer un compte puis un projet. Si le port est occupé, changer `CIRCULAR_HTTP_PORT` dans `.env`. Sous Linux, utiliser `cp .env.example .env` et `python3` pour les deux premières commandes.
+Ouvrir **http://127.0.0.1:4310**, créer un compte puis un espace. Son premier projet et trois tickets d’accueil sont créés une seule fois ; les étapes profil, invitations et intégrations peuvent être passées. Si le port est occupé, changer `CIRCULAR_HTTP_PORT` dans `.env`. Sous Linux, utiliser `cp .env.example .env` et `python3` pour les deux premières commandes.
 
 ```powershell
 docker compose -f compose.yaml -f compose.postgres.yaml -f compose.local.yaml ps
@@ -54,14 +54,17 @@ Ne pas inclure `compose.local.yaml` en production. L’application refuse une co
 
 Inscription avec pseudo unique, adresse `@epita.fr` et mot de passe de 12 à 128 caractères ; connexion par pseudo ou adresse. Le contrôle du domaine **ne vérifie pas la possession de l’adresse** : aucun courriel de validation ou d’invitation n’est envoyé. Ce point doit être accepté pour le pilote, ou complété par une validation mail/SSO avant une ouverture nécessitant une identité scolaire certifiée.
 
-Chaque projet appartient à son créateur et reste privé. Celui-ci invite un compte déjà inscrit par son adresse ; le destinataire accepte ou refuse dans l’application. Après acceptation, les membres gèrent les tickets et commentent. Seul le propriétaire modifie/supprime le projet, invite ou retire les membres. Les liens de tickets restent soumis à ces droits.
+Un compte peut posséder ou rejoindre plusieurs espaces. Le menu en haut à gauche permet de changer d’espace, en créer un, accéder aux paramètres et gérer ses membres. Le propriétaire invite une adresse EPITA, même avant son inscription, ou crée un lien d’invitation révocable valable sept jours. L’adhésion exige un compte connecté et une acceptation explicite.
 
-Préférences, vues enregistrées, modèles et favoris sont personnels. Les étiquettes appartiennent à leur créateur ; une étiquette attachée à un ticket partagé est visible aux membres, mais seul son créateur la modifie. Les commentaires affichent leur auteur : seul cet auteur les modifie ; le propriétaire du projet peut aussi les supprimer. Un retrait d’accès prend effet sur les requêtes suivantes.
+Les nouveaux projets sont accessibles aux membres de leur espace. Leur créateur et le propriétaire de l’espace les administrent ; les membres gèrent les tickets et commentent. Une invitation limitée à un projet reste possible et donne un rôle d’invité à accès limité. Les projets historiques conservent leur visibilité privée et leurs invitations existantes : la migration n’ouvre pas tous les anciens projets aux invités. Les liens de tickets restent soumis à ces droits.
+
+Préférences, filtres, vues et modèles sont personnels et séparés par espace ; les favoris appartiennent au compte. Les étiquettes des nouveaux espaces sont visibles à leurs membres et modifiables par leur créateur. Les invités n’accèdent qu’aux étiquettes associées à leur périmètre. Les commentaires affichent leur auteur : seul cet auteur les modifie ; le propriétaire du projet peut aussi les supprimer. Un retrait d’accès prend effet sur les requêtes suivantes.
 
 Mots de passe hachés avec Argon2id, sessions serveur révocables, cookies HttpOnly/SameSite et Secure en production, contrôle CSRF des mutations, limites de tentatives conservées en base. Durée maximale de session : 12 heures, expiration après 30 minutes d’inactivité. Changer ou réinitialiser un mot de passe révoque les sessions. Aucun jeton n’est conservé dans localStorage.
 
 ## Fonctions
 
+- Espaces : création guidée, nom/slug, profil, invitations, membres et menu de changement d’espace.
 - Projets : nom, préfixe stable, description, couleur, statut, échéance et membres.
 - Tickets : identifiant, titre, description, projet, statut, priorité, étiquettes, échéance ; création/modification/suppression, duplication et modèles.
 - Liste et tableau : glisser-déposer, recherche, filtres multiples, tri, groupement, propriétés et colonnes configurables.
@@ -107,7 +110,7 @@ npm run build
 npm run test:e2e
 ```
 
-Chrome installé est utilisé par Playwright ; les tests ne se connectent pas au profil personnel. Chaque parcours démarre un backend et une base isolés. Pour inclure PostgreSQL, fournir une **base de test dédiée** par `CIRCULAR_TEST_POSTGRES_URL_FILE` : un schéma temporaire est créé et supprimé par test. Sans configuration, ces tests sont explicitement ignorés, pas déclarés réussis. Les résultats datés figurent dans [production-validation.md](docs/production-validation.md).
+Chrome installé est utilisé par Playwright ; les tests ne se connectent pas au profil personnel. Chaque parcours démarre un backend et une base isolés. Pour inclure PostgreSQL, fournir une **base de test dédiée** par `CIRCULAR_TEST_POSTGRES_URL_FILE` : un schéma temporaire est créé et supprimé par test. Sans configuration, ces tests sont explicitement ignorés, pas déclarés réussis. Les résultats datés figurent dans [workspace-validation.md](docs/workspace-validation.md).
 
 ## Architecture et documents
 
@@ -124,8 +127,8 @@ tests/                    Tests API, PostgreSQL et parcours navigateur
 docs/                     Spécifications, architecture, audits et exploitation
 ```
 
-[Architecture](docs/architecture.md) · [Spécification](docs/specification.md) · [Déploiement](docs/deployment.md) · [Validation actuelle](docs/production-validation.md) · [Audit de référence](docs/observation-linear.md)
+[Architecture](docs/architecture.md) · [Spécification](docs/specification.md) · [Parcours d’espaces](docs/workspace-workflows.md) · [Déploiement](docs/deployment.md) · [Validation 2.1](docs/workspace-validation.md) · [Validation initiale](docs/production-validation.md) · [Scan Docker](docs/container-security.md) · [Audit de référence](docs/observation-linear.md)
 
 ## Limites actuelles
 
-Pas de validation de propriété de l’adresse mail, SSO, récupération de mot de passe par mail ni collaboration temps réel. La récupération est opérée par l’infra via `python -m backend.manage reset-password --email ...` après vérification de l’identité. Les workflows personnalisables, sous-tickets, pièces jointes, texte riche et administration avancée restent hors périmètre. Les listes ne sont pas paginées et aucun test de charge à l’échelle de l’école n’a été réalisé. La qualification sur le domaine, le proxy et la base de l’école reste à faire par son infrastructure.
+GitHub et Slack disposent d’écrans « À venir » : un clic affiche « Intégration pas encore implémentée », sans authentification ni requête externe. Pas de validation de propriété de l’adresse mail, SSO, récupération de mot de passe par mail ni collaboration temps réel. La récupération est opérée par l’infra via `python -m backend.manage reset-password --email ...` après vérification de l’identité. Les workflows personnalisables, sous-tickets, pièces jointes, texte riche et administration avancée restent hors périmètre. Les listes ne sont pas paginées et aucun test de charge à l’échelle de l’école n’a été réalisé. La qualification sur le domaine, le proxy et la base de l’école reste à faire par son infrastructure.

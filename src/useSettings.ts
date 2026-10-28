@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api } from './api';
+import { api, ApiError, getSessionGeneration, getWorkspaceId } from './api';
 import { DEFAULT_SETTINGS, type Settings } from './types';
 import { message } from './ui';
 
 /** Serialize changed fields without overwriting unrelated preferences from another tab. */
 export function useSettings() {
+  const workspaceId = useRef(getWorkspaceId()).current;
+  const sessionGeneration = useRef(getSessionGeneration()).current;
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
@@ -19,7 +21,7 @@ export function useSettings() {
     const version = ++generation.current;
     try {
       await queue.current.catch(() => undefined);
-      const stored = await api.settings();
+      const stored = await api.settings(workspaceId);
       if (!mounted.current || version !== generation.current) return;
       latest.current = stored;
       setSettings(stored);
@@ -37,10 +39,11 @@ export function useSettings() {
     setSettings(snapshot);
     setPending(count => count + 1);
     const task = queue.current.catch(() => undefined).then(async () => {
+      if (sessionGeneration !== getSessionGeneration()) throw new ApiError('La session a changé. Les anciennes modifications ont été annulées.', 409);
       const changes = { ...failedChanges.current, ...patch };
       if (!Object.keys(changes).length) return;
       try {
-        await api.updateSettings(changes);
+        await api.updateSettings(changes, workspaceId);
         failedChanges.current = {};
       } catch (error) {
         failedChanges.current = changes;

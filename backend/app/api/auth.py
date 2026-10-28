@@ -3,7 +3,7 @@ import os
 import secrets
 from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response
-from backend.app.schemas.auth import ChangePassword, Login, Register, SessionResponse
+from backend.app.schemas.auth import ChangePassword, Login, Register, SessionResponse, ProfileUpdate, PublicUser
 from backend.app.services.auth import AuthService
 from backend.app.services.workspace import DomainError
 
@@ -85,3 +85,8 @@ def change_password(data: ChangePassword, request: Request, user: User):
     response = Response(status_code=204)
     clear_cookie(response)
     return response
+
+
+@router.patch("/profile", response_model=PublicUser)
+def update_profile(data: ProfileUpdate, request: Request, user: User):
+    return service(request).update_profile(user["id"], data.model_dump())

@@ -49,10 +49,18 @@ class ChangePassword(Input):
     newPassword: Password
 
 
+class ProfileUpdate(Input):
+    displayName: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
+    title: Annotated[str, StringConstraints(strip_whitespace=True, max_length=120)] = ""
+
+
 class PublicUser(BaseModel):
     id: int
     email: str
     username: str
+    displayName: str
+    title: str
+    profileCompleted: bool
 
 
 class SessionResponse(BaseModel):

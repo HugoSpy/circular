@@ -1,5 +1,7 @@
 # Circular — validation de la livraison Docker et multi-utilisateur
 
+Rapport historique de la version 2.0. La [validation des espaces et du correctif Docker 2.1](workspace-validation.md) décrit la livraison suivante ; les résultats ci-dessous concernent les images indiquées ici.
+
 Vérifications du **28 octobre 2026**, sur Windows avec Docker Desktop exécutant des conteneurs Linux. Les bases de test, comptes et projets utilisés sont fictifs. Aucune connexion au réseau de production de l’école, aucune publication de registre et aucune modification de la base SQLite utilisateur n’ont été effectuées.
 
 ## Résultats Docker réellement exécutés

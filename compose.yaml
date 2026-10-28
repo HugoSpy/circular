@@ -1,7 +1,7 @@
 name: circular
 services:
   app:
-    image: circular:${CIRCULAR_IMAGE_TAG:-2.0.0}
+    image: circular:${CIRCULAR_IMAGE_TAG:-2.1.0}
     build: .
     init: true
     restart: unless-stopped

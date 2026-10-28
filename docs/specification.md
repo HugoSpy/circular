@@ -1,5 +1,9 @@
 # Circular — spécification fonctionnelle
 
+## Évolution du 28 octobre 2026 — espaces et onboarding
+
+Le [parcours de création d’espaces](workspace-workflows.md) complète les comptes et projets décrits ci-dessous : un espace regroupe les projets, possède ses membres et dispose d’un parcours d’accueil. Les nouveaux projets d’un espace sont partagés avec ses membres ; les projets historiques conservent leurs restrictions. Le menu en haut à gauche réunit création/changement d’espace, paramètres, membres et déconnexion. GitHub et Slack sont présentés comme des intégrations à venir, avec un message explicite au clic demandé par l’utilisateur.
+
 ## Évolution du 28 octobre 2026 — comptes, projets privés et déploiement
 
 À la demande de l’utilisateur, cette version remplace le périmètre mono-utilisateur des sections historiques ci-dessous. L’identité et les fonctionnalités métier existantes sont conservées.

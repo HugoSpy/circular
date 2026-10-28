@@ -1,5 +1,17 @@
 # Architecture de Circular
 
+## Décision 004 — espaces de travail et onboarding, 28 octobre 2026
+
+Les tables `workspaces` et `workspace_members` ajoutent un conteneur aux projets. Une adhésion est propriétaire, membre ou invité limité aux projets explicitement partagés. La migration `005_workspaces.sql`, propre à chaque dialecte, affecte les anciennes données à un espace personnel en conservant la visibilité privée des projets. Le backfill est transactionnel ; il est aussi utilisé par l’import SQLite et l’attribution des données historiques.
+
+La création d’espace est une transaction qui crée l’adhésion propriétaire, le premier projet et les trois tickets d’accueil demandés. Les étapes facultatives s’appuient sur le profil du compte et l’état d’onboarding de son adhésion. Les invitations à une adresse et les liens expirent au bout de sept jours ; le backend ne stocke que l’empreinte du secret d’un lien. Les liens restent soumis à une connexion et à une acceptation explicite.
+
+Le navigateur envoie `X-Workspace-Id`, capturé au départ de chaque requête. Le serveur valide l’adhésion et filtre les ressources de cet espace, y compris les accès directs, références d’étiquettes, préférences, vues et modèles. Les anciennes requêtes sans cet en-tête restent compatibles et soumises aux droits du compte ; omettre l’en-tête ne rétablit pas un accès révoqué. Les mutations PostgreSQL conservent un verrou sur l’adhésion sélectionnée pendant leur transaction. Côté React, un changement d’espace remonte l’application et empêche qu’une réponse tardive ou un enregistrement de réglages en attente ne contamine l’espace suivant.
+
+La sélection de l’espace fait partie de l’URL (`?workspace=<slug>`), les liens d’invitation utilisent un fragment et les données métier restent en base. Les invitations n’envoient pas d’email. GitHub/Slack sont des présentations explicitement inactives, conformément à la demande ; aucun accès à ces services n’est effectué.
+
+Le runtime Docker passe à l’image officielle Python 3.12/Alpine 3.24 figée par digest. Le [diagnostic du scan](container-security.md) explique le changement de distribution et les vérifications associées.
+
 ## Décision 003 — service multi-utilisateur déployable, 28 octobre 2026
 
 Cette décision complète et remplace les hypothèses mono-utilisateur/loopback des décisions historiques ci-dessous. Le découpage React → routes FastAPI/Pydantic → services → dépôts SQL est conservé. Les opérations synchrones utilisent les handlers FastAPI synchrones et leur pool de threads ; aucune opération bloquante de base n’est ajoutée à un handler async.

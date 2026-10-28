@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './styles.css';
 import App from './App';
 import { AuthGate } from './AuthGate';
+import { WorkspaceGate } from './Workspaces';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -13,4 +14,4 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean
   }
 }
 
-createRoot(document.getElementById('root')!).render(<React.StrictMode><ErrorBoundary><AuthGate>{(user, endSession) => <App key={user.id} user={user} onSessionEnd={endSession} />}</AuthGate></ErrorBoundary></React.StrictMode>);
+createRoot(document.getElementById('root')!).render(<React.StrictMode><ErrorBoundary><AuthGate>{(user, endSession, updateUser) => <WorkspaceGate key={user.id} user={user} onUserUpdated={updateUser} onSessionEnd={endSession}>{controls => <App key={`${user.id}:${controls.workspace.id}`} user={user} onSessionEnd={endSession} onUserUpdated={updateUser} workspaceControls={controls} />}</WorkspaceGate>}</AuthGate></ErrorBoundary></React.StrictMode>);

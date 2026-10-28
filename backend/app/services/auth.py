@@ -20,7 +20,7 @@ def verifier(token: str) -> str:
 
 
 def public_user(user: dict) -> dict:
-    return {"id": user["id"], "email": user["email"], "username": user["username"]}
+    return {"id": user["id"], "email": user["email"], "username": user["username"], "displayName": user["display_name"] or user["username"], "title": user["title"], "profileCompleted": bool(user["profile_completed"])}
 
 
 class AuthService:
@@ -102,7 +102,7 @@ class AuthService:
                     repo.delete_session(digest)
                 else:
                     repo.touch_session(digest, now)
-                    result = {"user": {"id": session["user_id"], "email": session["email"], "username": session["username"]}, "csrfToken": session["csrf_token"]}
+                    result = {"user": public_user({**session, "id": session["user_id"]}), "csrfToken": session["csrf_token"]}
         if result is None:
             raise DomainError(401, "Votre session a expiré. Reconnectez-vous.")
         return result
@@ -135,3 +135,7 @@ class AuthService:
             repo.update_password(user["id"], encoded)
             repo.revoke_user_sessions(user["id"])
         logger.info("password_reset_by_operator user_id=%s", user["id"])
+
+    def update_profile(self, user_id: int, data: dict) -> dict:
+        with self.database.connect(write=True) as connection:
+            return public_user(AuthRepository(connection).update_profile(user_id, data))

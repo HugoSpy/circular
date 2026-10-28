@@ -4,8 +4,8 @@ import { test, expect } from './fixtures';
 const navigation = (page: Page) => page.getByRole('navigation', { name: 'Navigation principale' });
 async function settings(page: Page, section?: 'Étiquettes'|'Modèles') {
   await navigation(page).getByRole('button', { name: 'Paramètres', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Votre espace de travail', exact: true })).toBeVisible();
-  if (section) await page.getByRole('navigation', { name: 'Sections des paramètres' }).getByRole('button', { name: new RegExp(`^${section}`) }).click();
+  await expect(page.getByRole('heading', { name: 'Paramètres', exact: true })).toBeVisible();
+  await page.getByRole('navigation', { name: 'Sections des paramètres' }).getByRole('button', { name: new RegExp(`^${section || 'Préférences'}`) }).click();
 }
 async function tickets(page: Page) { await navigation(page).getByRole('button', { name: /^Tous les tickets/ }).click(); }
 async function display(page: Page) {

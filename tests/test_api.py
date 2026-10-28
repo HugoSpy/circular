@@ -238,4 +238,4 @@ def test_seed_is_explicit_atomic_idempotent_and_preserves_deleted_demo(tmp_path)
     assert seed_database(database) is False
     with database.connect() as connection:
         assert connection.execute("SELECT COUNT(*) FROM issues").fetchone()[0] == 15
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 4
+        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 5

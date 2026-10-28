@@ -3,6 +3,7 @@ import argparse
 import sqlite3
 from backend.app.core.config import database_target
 from backend.app.db.session import Database
+from backend.app.db.backfill import backfill_workspaces
 
 
 def claim_legacy(database: Database, user_id: int) -> int:
@@ -23,6 +24,7 @@ def claim_legacy(database: Database, user_id: int) -> int:
         old = connection.execute("SELECT payload FROM workspace_settings WHERE id = 1").fetchone()
         if old:
             connection.execute("INSERT INTO user_settings(user_id, payload) VALUES (?, ?) ON CONFLICT DO NOTHING", (user_id, old[0]))
+        backfill_workspaces(connection)
         return count
 
 
