@@ -129,6 +129,8 @@ docs/                     Spécifications, architecture, audits et exploitation
 
 [Architecture](docs/architecture.md) · [Spécification](docs/specification.md) · [Parcours d’espaces](docs/workspace-workflows.md) · [Déploiement](docs/deployment.md) · [Validation 2.1](docs/workspace-validation.md) · [Validation initiale](docs/production-validation.md) · [Scan Docker](docs/container-security.md) · [Audit de référence](docs/observation-linear.md)
 
+[Spécification de l’espace documentaire](docs/knowledge-workspace-spec.md)
+
 ## Limites actuelles
 
 GitHub et Slack disposent d’écrans « À venir » : un clic affiche « Intégration pas encore implémentée », sans authentification ni requête externe. Pas de validation de propriété de l’adresse mail, SSO, récupération de mot de passe par mail ni collaboration temps réel. La récupération est opérée par l’infra via `python -m backend.manage reset-password --email ...` après vérification de l’identité. Les workflows personnalisables, sous-tickets, pièces jointes, texte riche et administration avancée restent hors périmètre. Les listes ne sont pas paginées et aucun test de charge à l’échelle de l’école n’a été réalisé. La qualification sur le domaine, le proxy et la base de l’école reste à faire par son infrastructure.
