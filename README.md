@@ -127,7 +127,7 @@ tests/                    Tests API, PostgreSQL et parcours navigateur
 docs/                     Spécifications, architecture, audits et exploitation
 ```
 
-[Architecture](docs/architecture.md) · [Spécification](docs/specification.md) · [Parcours d’espaces](docs/workspace-workflows.md) · [Déploiement](docs/deployment.md) · [Validation 2.1](docs/workspace-validation.md) · [Validation initiale](docs/production-validation.md) · [Scan Docker](docs/container-security.md) · [Audit de référence](docs/observation-linear.md)
+[Architecture](docs/architecture.md) · [Spécification](docs/specification.md) · [Parcours d’espaces](docs/workspace-workflows.md) · [Espace documentaire](docs/knowledge-workspace-implementation-plan.md) · [Déploiement](docs/deployment.md) · [Validation 2.1](docs/workspace-validation.md) · [Validation initiale](docs/production-validation.md) · [Scan Docker](docs/container-security.md) · [Audit de référence](docs/observation-linear.md)
 
 [Spécification de l’espace documentaire](docs/knowledge-workspace-spec.md)
 

@@ -41,3 +41,21 @@ Format d’une entrée
 - Fait observé — La première lecture de l’inventaire Docker a rencontré un refus d’accès au socket. Une recherche a aussi visé un `pyproject.toml` absent et une lecture trop large de l’ancienne conversation a renvoyé du texte que le script a tenté de décoder comme du JSON.
 - Cause — Le contrôle a supposé l’accès au daemon, l’existence du manifeste et le format de la réponse de l’outil.
 - Règle vérifiable — Pour Docker Desktop, utiliser l’accès au socket autorisé. Lister les manifestes existants avant de les lire. Pour l’historique d’une conversation, limiter la taille de la réponse et vérifier son type avant de la décoder.
+
+### 2026-11-21 — Socle et identité de Circular Docs
+
+- Fait observé — L’installation Python dans le bac à sable a échoué sur la résolution DNS, et l’installation npm hors ligne sur un paquet absent du cache. Une lecture de cache pip a également échoué et deux anciens chemins documentaires Authlib ont renvoyé 404.
+- Cause — Les vérifications ont supposé l’accès à PyPI, un cache exploitable et des URL documentaires toujours valides.
+- Règle vérifiable — Pour de nouvelles dépendances, utiliser un cache temporaire en écriture et l’accès réseau autorisé. Rechercher les pages officielles avant d’ouvrir les chemins de documentation.
+- Fait observé — La première mutation de résolution d’identité est restée verte. Seule la première des deux lectures de la ligne avait été touchée.
+- Cause — La seconde lecture, après acquisition du verrou de provisionnement, retrouvait encore l’identité stable.
+- Règle vérifiable — Lorsqu’un test reste vert après mutation, vérifier les chemins de repli avant de conclure. Ici, modifier les deux lectures a fait échouer le scénario de changement d’adresse.
+- Fait observé — Le script de mutation du focus s’est interrompu avant restauration, car `status` est en lecture seule dans zsh. Une relance a donc encore compilé la source mutée. La source a ensuite été restaurée et comparée octet par octet à sa sauvegarde.
+- Cause — Le script a supposé qu’une variable de statut ordinaire était disponible et que son piège de sortie s’exécuterait après cette erreur.
+- Règle vérifiable — Employer un nom propre au test pour le code de retour. Vérifier la restauration de la source et reconstruire le frontend avant de relancer le scénario.
+
+### 2026-11-22 — Intégration de la documentation de Circular Docs
+
+- Fait observé — La première vérification a pris un exemple Markdown de lien interne, affiché en code dans le plan, pour un lien relatif du dépôt.
+- Cause — Le contrôle recherchait la syntaxe des liens dans le texte brut, y compris dans les exemples de code.
+- Règle vérifiable — Exclure les blocs et fragments de code avant le contrôle des liens Markdown. Faire échouer la commande si la vérification des liens échoue.
