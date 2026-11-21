@@ -27,6 +27,8 @@ Le socle a été vérifié localement le 21 novembre 2026. Le [contrat d’ident
 
 ## Lot 2 — Espaces, invitations et arborescence
 
+Le [contrat du lot 2 et la maquette approuvée](circular-docs/espaces.md) décrivent les droits, les invitations de sept jours et la navigation.
+
 - **Livrables.** Créer les espaces, les adhésions et les invitations. Créer, lire, renommer et déplacer une page racine ou enfant. Afficher l’arborescence et le fil d’Ariane après validation de la maquette.
 - **Contrat.** Donner à l’espace et à la page des identifiants stables. Un parent appartient au même espace que son enfant. Autoriser les doublons de titre et trier les frères par titre puis identifiant. Créer l’espace et son adhésion propriétaire en une transaction. L’acceptation d’une invitation est réservée au compte invité et crée une seule adhésion. Appliquer les rôles propriétaire, éditeur et lecteur à chaque requête. Sérialiser les modifications concurrentes de l’arborescence au sein d’un espace pour empêcher les cycles et les parents devenus indisponibles.
 - **Critère de sortie.** Un lecteur invité obtient `404` sur le lien direct avant acceptation, peut lire après acceptation et obtient `403` sur une tentative d’édition. Un déplacement change le fil d’Ariane sans changer l’URL. Une tentative de cycle, y compris par deux déplacements concurrents, laisse une arborescence valide.

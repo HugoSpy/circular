@@ -1,6 +1,6 @@
 # Circular Docs
 
-Socle du service documentaire privé. Le navigateur utilise l’interface React/TypeScript. FastAPI sert cette interface et l’API sur une même origine. PostgreSQL conserve les identités et les sessions. Le [contrat du lot 1](identite.md) décrit le provisionnement et les réponses de l’API.
+Socle du service documentaire privé. Le navigateur utilise l’interface React/TypeScript. FastAPI sert cette interface et l’API sur une même origine. PostgreSQL conserve les identités et les sessions. Le [contrat du lot 1](identite.md) décrit le provisionnement et les réponses de l’API. Le [contrat du lot 2](espaces.md) décrit les espaces privés, les invitations et l’arborescence.
 
 ## Démarrer en local
 

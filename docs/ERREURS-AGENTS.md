@@ -59,3 +59,12 @@ Format d’une entrée
 - Fait observé — La première vérification a pris un exemple Markdown de lien interne, affiché en code dans le plan, pour un lien relatif du dépôt.
 - Cause — Le contrôle recherchait la syntaxe des liens dans le texte brut, y compris dans les exemples de code.
 - Règle vérifiable — Exclure les blocs et fragments de code avant le contrôle des liens Markdown. Faire échouer la commande si la vérification des liens échoue.
+
+### 2026-11-22 — Espaces privés de Circular Docs
+
+- Fait observé — Le premier contrôle d’une mutation a interrompu le lot sur une assertion de durée qui avait échoué comme attendu.
+- Cause — Le script exigeait le texte exact `AssertionError`. Pytest présentait la comparaison sous la forme `E assert`.
+- Règle vérifiable — Identifier le scénario dans le résumé pytest et reconnaître la forme de comparaison enrichie avant de conclure que la mutation est inexploitable.
+- Fait observé — La compilation a rejeté l’accès à la page parente dans un formulaire. Le premier scénario de révocation a attendu le libellé exact du sélecteur de rôle jusqu’à expiration.
+- Cause — Deux types de formulaire partageaient une variante de l’union TypeScript. Le test ciblait la structure du libellé plutôt que le nom accessible affiché dans la trace.
+- Règle vérifiable — Déclarer une variante annotée par action lorsque les champs diffèrent. Pour une sélection Playwright, utiliser le rôle et le nom accessible confirmés dans l’arbre d’accessibilité.
