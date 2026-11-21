@@ -8,7 +8,7 @@ Le [parcours de création d’espaces](workspace-workflows.md) complète les com
 
 À la demande de l’utilisateur, cette version remplace le périmètre mono-utilisateur des sections historiques ci-dessous. L’identité et les fonctionnalités métier existantes sont conservées.
 
-1. Inscription avec pseudo unique, adresse normalisée strictement `@epita.fr` et mot de passe de 12 à 128 caractères. Connexion avec pseudo ou adresse. Le domaine est contrôlé, mais la possession de l’adresse n’est pas vérifiée et aucun email n’est envoyé.
+1. Inscription avec pseudo unique, adresse normalisée strictement `@epita.fr` et mot de passe de 12 à 128 caractères. Connexion avec pseudo ou adresse. La possession de l’adresse est confirmée par email avant l’accès aux invitations ciblées ; voir [le périmètre d’authentification](auth-email-verification-scope.md).
 2. Chaque projet créé est privé. Son propriétaire peut inviter un compte existant par adresse ; une invitation apparaît dans la boîte de réception de ce compte, sans donner accès aux tickets tant qu’elle n’est pas acceptée. Refus, annulation et retrait d’un membre sont persistants.
 3. Les membres acceptés peuvent créer, modifier, déplacer et supprimer les tickets du projet. Seul le propriétaire gère le projet et ses membres. Un identifiant de ticket ou un lien direct ne permet pas de contourner les droits.
 4. Préférences, filtres, vues, modèles et favoris sont personnels. Une étiquette personnelle attachée à un ticket partagé devient visible aux membres ; son créateur conserve les droits de modification. Les références devenues inaccessibles sont nettoyées lors d’un retrait de projet.
@@ -16,7 +16,7 @@ Le [parcours de création d’espaces](workspace-workflows.md) complète les com
 6. Déconnexion et changement de mot de passe depuis Mon compte. Sessions expirées renvoyées vers la connexion. La récupération d’un mot de passe oublié est effectuée par l’infra après vérification d’identité, via la CLI ; pas de récupération mail automatique.
 7. Image Docker et connexion PostgreSQL, soit via la base fournie par Compose, soit via celle de l’école. Secrets séparés, migrations au démarrage, santé et disponibilité de la base contrôlées. Sauvegarde/restauration et import SQLite documentés.
 
-La [validation de production](production-validation.md) relate les tests réellement exécutés. La mise en ligne sur les serveurs/domaine de l’école n’est pas effectuée par cette livraison. Temps réel, SSO, vérification mail et administration avancée restent hors périmètre.
+La [validation de production](production-validation.md) relate les tests réellement exécutés. La mise en ligne sur les serveurs/domaine de l’école n’est pas effectuée par cette livraison. La confirmation d’adresse par email est désormais implémentée ; le SSO, le temps réel et l’administration avancée restent hors périmètre.
 
 ## Historique de la version locale et de ses observations
 

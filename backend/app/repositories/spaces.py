@@ -61,7 +61,8 @@ class SpacesRepository:
     def inbox(self, email: str) -> list[dict]:
         return [dict(row) for row in self.connection.execute("""SELECT i.id, i.workspace_id AS workspaceId, w.name AS workspaceName,
             u.display_name AS inviterName, i.email, i.expires_at AS expiresAt FROM workspace_invitations i JOIN workspaces w ON w.id = i.workspace_id
-            JOIN users u ON u.id = i.inviter_id WHERE i.email = ? AND i.expires_at > ? ORDER BY i.id""", (email, timestamp()))]
+            JOIN users u ON u.id = i.inviter_id JOIN users recipient ON recipient.email = i.email
+            WHERE i.email = ? AND recipient.email_verified = 1 AND i.expires_at > ? ORDER BY i.id""", (email, timestamp()))]
 
     def invitation(self, invitation_id: int, email: str, *, lock: bool = True) -> dict | None:
         locking = " FOR UPDATE" if lock and getattr(self.connection, "dialect", "sqlite") == "postgresql" else ""

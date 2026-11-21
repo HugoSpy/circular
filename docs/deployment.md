@@ -27,6 +27,7 @@ Copier `.env.example` vers `.env` puis renseigner les valeurs **non secrètes** 
 | `CIRCULAR_HTTP_PORT` | Port hôte de l’application, 4310 par défaut |
 | `CIRCULAR_SECRETS_DIR` | Répertoire privé des fichiers montés en secrets ; `./secrets` par défaut |
 | `CIRCULAR_TRUSTED_PROXIES` | IP ou CIDR exacts des proxys autorisés à fournir les en-têtes transmis ; jamais `*` |
+| `CIRCULAR_SMTP_HOST`, `CIRCULAR_SMTP_PORT`, `CIRCULAR_SMTP_USERNAME`, `CIRCULAR_EMAIL_FROM` | Relais SMTP STARTTLS pour les confirmations d’adresse ; requis en production |
 
 L’application lit la connexion dans `/run/secrets/database_url`, via `CIRCULAR_DATABASE_URL_FILE`. Le fichier contient une URL PostgreSQL ; son contenu ne doit pas être placé dans `.env`, dans une commande visible, dans le dépôt ou dans un ticket d’exploitation. Les secrets ne sont pas inclus dans le contexte de build grâce à la liste d’autorisation de `.dockerignore`.
 
@@ -37,7 +38,7 @@ cp .env.example .env
 python3 scripts/init-secrets.py --directory secrets
 ```
 
-Le script génère des mots de passe distincts pour le compte d’initialisation et le compte applicatif. Il refuse d’écraser un secret existant. Sous Linux, le dossier doit être en mode `0700` ; les fichiers sont `0444` à l’intérieur de ce dossier privé, afin que les UID des conteneurs lisent leurs fichiers montés individuellement. Les autres comptes hôte ne peuvent pas traverser le dossier. Avec un gestionnaire de secrets de l’école, remplacer les montages par ceux de l’orchestrateur et conserver cette séparation des accès. Sur Windows, appliquer les ACL équivalentes au dossier ; les bits POSIX ne remplacent pas les ACL Windows.
+Le script génère des mots de passe distincts pour le compte d’initialisation et le compte applicatif. Il refuse d’écraser un secret PostgreSQL existant et crée `smtp_password` vide seulement s’il manque. Pour la production, remplacer ce fichier par le mot de passe SMTP fourni par le gestionnaire approuvé ; le fichier vide ne permet pas l’envoi. Sous Linux, le dossier doit être en mode `0700` ; les fichiers sont `0444` à l’intérieur de ce dossier privé, afin que les UID des conteneurs lisent leurs fichiers montés individuellement. Les autres comptes hôte ne peuvent pas traverser le dossier. Avec un gestionnaire de secrets de l’école, remplacer les montages par ceux de l’orchestrateur et conserver cette séparation des accès. Sur Windows, appliquer les ACL équivalentes au dossier ; les bits POSIX ne remplacent pas les ACL Windows.
 
 Ne pas relancer le générateur pour « changer le mot de passe » d’un volume PostgreSQL existant : les fichiers d’initialisation ne s’appliquent qu’au premier démarrage d’un volume vide. La rotation doit changer le rôle PostgreSQL, mettre à jour les secrets par le gestionnaire et recréer l’application de façon coordonnée.
 
@@ -45,7 +46,7 @@ Ne pas relancer le générateur pour « changer le mot de passe » d’un volume
 
 Faire créer une base dédiée et un rôle applicatif `NOSUPERUSER NOCREATEDB NOCREATEROLE`. Ce rôle doit posséder la base/le schéma de Circular ou disposer des droits DDL nécessaires aux migrations, ainsi que des droits sur les tables et séquences. L’application ne nécessite pas le mot de passe de l’administrateur PostgreSQL.
 
-Faire déposer l’URL dans `secrets/database_url` par le mécanisme approuvé. Pour une connexion hors réseau local de l’hôte, utiliser TLS avec vérification du serveur (`sslmode=verify-full`) et, si nécessaire, monter l’autorité de certification PostgreSQL dans le conteneur et indiquer `sslrootcert=/run/secrets/postgres_ca`. Le nom DNS doit correspondre au certificat. La configuration Compose de base ne monte que `database_url` ; ajouter le secret `postgres_ca` dans l’override d’infrastructure si nécessaire. Ne pas désactiver la validation TLS pour résoudre une erreur de certificat.
+Faire déposer l’URL dans `secrets/database_url` par le mécanisme approuvé. Pour une connexion hors réseau local de l’hôte, utiliser TLS avec vérification du serveur (`sslmode=verify-full`) et, si nécessaire, monter l’autorité de certification PostgreSQL dans le conteneur et indiquer `sslrootcert=/run/secrets/postgres_ca`. Le nom DNS doit correspondre au certificat. La configuration Compose de base monte `database_url` et `smtp_password` ; ajouter le secret `postgres_ca` dans l’override d’infrastructure si nécessaire. Ne pas désactiver la validation TLS pour résoudre une erreur de certificat.
 
 Depuis le dossier du projet, après configuration de `.env` et des secrets :
 
@@ -97,7 +98,7 @@ Superviser `GET /api/health` pour le processus et `GET /api/ready` pour l’acc�
 
 ## Comptes, projets et limites fonctionnelles
 
-L’inscription nécessite un pseudo unique, une adresse dont le domaine est exactement `epita.fr`, et un mot de passe de 12 à 128 caractères. **Le domaine est contrôlé, la possession de l’adresse n’est pas vérifiée** : aucun SMTP, code de confirmation ou SSO n’est livré. Cette limite doit être acceptée par l’école avant ouverture publique ; un SSO ou une vérification mail est une évolution distincte.
+L’inscription nécessite un pseudo unique, une adresse dont le domaine est exactement `epita.fr`, et un mot de passe de 12 à 128 caractères. Une confirmation par courriel est requise avant d’accepter une invitation nominative. En développement, le lien est écrit dans les logs locaux ; en production, il est envoyé par le relais SMTP STARTTLS configuré. Le SSO et la récupération automatique du mot de passe restent hors périmètre.
 
 Les comptes créent des espaces privés et peuvent y inviter des adresses EPITA, même avant leur inscription, ou partager un lien révocable valable sept jours. Les nouveaux projets sont accessibles aux membres de leur espace ; les projets historiques restent privés avec leurs accès existants. Une invitation limitée à un projet donne uniquement un accès d’invité à ce périmètre. Toute adhésion exige un compte connecté et une acceptation explicite. Préférences, vues et modèles sont personnels et séparés par espace. Un retrait de membre révoque ses accès et les invitations ciblées encore en attente ; les liens partagés doivent être révoqués séparément. Les contrôles sont dans l’API, indépendamment de l’affichage des boutons.
 

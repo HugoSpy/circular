@@ -14,7 +14,7 @@ Fichiers livrés :
 - `compose.yaml` : application connectée à une base PostgreSQL externe via secret monté.
 - `compose.postgres.yaml` : ajout facultatif de PostgreSQL 17 avec volume persistant et rôle applicatif non-superutilisateur.
 - `compose.local.yaml` : HTTP sur loopback pour les essais locaux uniquement.
-- `.env.example` : configuration publique ; `scripts/init-secrets.py` génère les secrets de la base Compose sans les afficher ni remplacer les fichiers existants.
+- `.env.example` : configuration publique ; `scripts/init-secrets.py` génère les secrets PostgreSQL et un fichier SMTP vide pour Compose local, sans afficher les identifiants ni remplacer un mot de passe SMTP existant.
 - Migrations SQLite/PostgreSQL, outil d’import de l’ancienne base SQLite, tests API et navigateur.
 
 ### Essai Docker local avec PostgreSQL
@@ -27,7 +27,7 @@ python scripts/init-secrets.py
 docker compose -f compose.yaml -f compose.postgres.yaml -f compose.local.yaml up -d --build
 ```
 
-Ouvrir **http://127.0.0.1:4310**, créer un compte puis un espace. Son premier projet et trois tickets d’accueil sont créés une seule fois ; les étapes profil, invitations et intégrations peuvent être passées. Si le port est occupé, changer `CIRCULAR_HTTP_PORT` dans `.env`. Sous Linux, utiliser `cp .env.example .env` et `python3` pour les deux premières commandes.
+Ouvrir **http://127.0.0.1:4310**, créer un compte puis confirmer l’adresse avec le lien affiché dans les logs du backend local. Un espace privé est ensuite créé avec un projet et trois tickets d’accueil ; les étapes profil, invitations et intégrations peuvent être passées. Si le port est occupé, changer `CIRCULAR_HTTP_PORT` dans `.env`. Sous Linux, utiliser `cp .env.example .env` et `python3` pour les deux premières commandes.
 
 ```powershell
 docker compose -f compose.yaml -f compose.postgres.yaml -f compose.local.yaml ps
@@ -48,13 +48,13 @@ docker compose -f compose.yaml up -d --build
 docker compose -f compose.yaml -f compose.postgres.yaml up -d --build
 ```
 
-Ne pas inclure `compose.local.yaml` en production. L’application refuse une configuration de production sans URL publique HTTPS ou sans PostgreSQL. Le port HTTP interne reste derrière le reverse proxy ; `/api/health` indique la vie du processus et `/api/ready` teste aussi la base.
+Ne pas inclure `compose.local.yaml` en production. L’application refuse une configuration de production sans URL publique HTTPS, PostgreSQL et relais SMTP. Renseigner `CIRCULAR_SMTP_HOST`, `CIRCULAR_SMTP_USERNAME`, `CIRCULAR_EMAIL_FROM` et placer le mot de passe SMTP dans `${CIRCULAR_SECRETS_DIR}/smtp_password` (le secret `smtp_password` est monté en lecture seule). Le relais doit accepter STARTTLS sur le port configuré. Le port HTTP interne reste derrière le reverse proxy ; `/api/health` indique la vie du processus et `/api/ready` teste aussi la base.
 
 ## Comptes, confidentialité et partage
 
-Inscription avec pseudo unique, adresse `@epita.fr` et mot de passe de 12 à 128 caractères ; connexion par pseudo ou adresse. Le contrôle du domaine **ne vérifie pas la possession de l’adresse** : aucun courriel de validation ou d’invitation n’est envoyé. Ce point doit être accepté pour le pilote, ou complété par une validation mail/SSO avant une ouverture nécessitant une identité scolaire certifiée.
+Inscription avec pseudo unique, adresse `@epita.fr` et mot de passe de 12 à 128 caractères ; connexion par pseudo ou adresse. Une confirmation par courriel est requise avant d’accéder aux invitations ciblées. En développement, le lien de confirmation apparaît dans les logs locaux ; en production, il est envoyé par le relais SMTP configuré.
 
-Un compte peut posséder ou rejoindre plusieurs espaces. Le menu en haut à gauche permet de changer d’espace, en créer un, accéder aux paramètres et gérer ses membres. Le propriétaire invite une adresse EPITA, même avant son inscription, ou crée un lien d’invitation révocable valable sept jours. L’adhésion exige un compte connecté et une acceptation explicite.
+Un compte doit confirmer son adresse EPITA avant de recevoir ou d’accepter une invitation. Les inscriptions répondent toujours par le même message, que l’adresse soit nouvelle ou déjà utilisée. Le lien est à usage unique et expire après 30 minutes; une inscription en attente peut demander un nouveau lien pendant 24 heures. En développement, le lien est écrit dans les logs locaux ; en production, il est envoyé par SMTP. Un compte peut ensuite posséder ou rejoindre plusieurs espaces. Le menu en haut à gauche permet de changer d’espace, en créer un, accéder aux paramètres et gérer ses membres. Le propriétaire invite une adresse EPITA, même avant son inscription, ou crée un lien d’invitation révocable valable sept jours. L’adhésion exige un compte connecté confirmé et une acceptation explicite.
 
 Les nouveaux projets sont accessibles aux membres de leur espace. Leur créateur et le propriétaire de l’espace les administrent ; les membres gèrent les tickets et commentent. Une invitation limitée à un projet reste possible et donne un rôle d’invité à accès limité. Les projets historiques conservent leur visibilité privée et leurs invitations existantes : la migration n’ouvre pas tous les anciens projets aux invités. Les liens de tickets restent soumis à ces droits.
 
@@ -133,4 +133,4 @@ docs/                     Spécifications, architecture, audits et exploitation
 
 ## Limites actuelles
 
-GitHub et Slack disposent d’écrans « À venir » : un clic affiche « Intégration pas encore implémentée », sans authentification ni requête externe. Pas de validation de propriété de l’adresse mail, SSO, récupération de mot de passe par mail ni collaboration temps réel. La récupération est opérée par l’infra via `python -m backend.manage reset-password --email ...` après vérification de l’identité. Les workflows personnalisables, sous-tickets, pièces jointes, texte riche et administration avancée restent hors périmètre. Les listes ne sont pas paginées et aucun test de charge à l’échelle de l’école n’a été réalisé. La qualification sur le domaine, le proxy et la base de l’école reste à faire par son infrastructure.
+GitHub et Slack disposent d’écrans « À venir » : un clic affiche « Intégration pas encore implémentée », sans authentification ni requête externe. Le SSO, la récupération de mot de passe par mail et la collaboration temps réel restent hors périmètre. La récupération est opérée par l’infra via `python -m backend.manage reset-password --email ...` après vérification de l’identité. Les workflows personnalisables, sous-tickets, pièces jointes, texte riche et administration avancée restent hors périmètre. Les listes ne sont pas paginées et aucun test de charge à l’échelle de l’école n’a été réalisé. Le relais SMTP et sa qualification sur le domaine, le proxy et la base de l’école restent à fournir par son infrastructure.

@@ -39,6 +39,19 @@ class Register(Input):
         return value
 
 
+class VerificationRequest(Input):
+    email: str = Field(max_length=254)
+
+    @field_validator("email")
+    @classmethod
+    def email_domain(cls, value: str) -> str:
+        return normalize_email(value)
+
+
+class VerificationToken(Input):
+    token: str = Field(min_length=32, max_length=128)
+
+
 class Login(Input):
     identifier: str = Field(min_length=1, max_length=254)
     password: ExistingPassword
@@ -66,3 +79,8 @@ class PublicUser(BaseModel):
 class SessionResponse(BaseModel):
     user: PublicUser
     csrfToken: str
+    emailVerified: bool
+
+
+class RegistrationAccepted(BaseModel):
+    message: str

@@ -3,6 +3,9 @@ services:
   app:
     environment:
       CIRCULAR_ENV: development
-      CIRCULAR_PUBLIC_URL: ""
+      CIRCULAR_PUBLIC_URL: "http://127.0.0.1:${CIRCULAR_HTTP_PORT:-4310}"
+      CIRCULAR_SMTP_HOST: ""
+      CIRCULAR_SMTP_USERNAME: ""
+      CIRCULAR_EMAIL_FROM: ""
     ports: !override
       - "127.0.0.1:${CIRCULAR_HTTP_PORT:-4310}:4310"

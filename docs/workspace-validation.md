@@ -1,5 +1,7 @@
 # Validation des espaces et de l’image 2.1
 
+Mise à jour du 21 novembre 2026 : ce rapport conserve les résultats exécutés le 28 octobre 2026. La vérification d’adresse par SMTP a été ajoutée ensuite et n’est pas couverte par ces résultats ; voir [son périmètre et ses vérifications](auth-email-verification-scope.md).
+
 Vérifications exécutées le **28 octobre 2026**, sur Windows avec Docker Desktop Linux, PostgreSQL 17 et Chrome installé. Les tests utilisent des comptes et des données fictifs, sans profil navigateur personnel ni connexion à Linear.
 
 ## Résultats
@@ -62,6 +64,6 @@ Les cinq groupes retournés par ce script ont réussi : collaboration, onboardin
 
 ## Limites
 
-GitHub et Slack ne sont pas implémentés : leurs écrans « À venir » et leur message au clic sont intentionnels. Aucun email d’invitation/validation ni SSO ; le domaine EPITA ne prouve pas la possession de l’adresse. Les captures Linear fournies servent de référence, sans nouvelle observation de Linear ni copie de ses ressources.
+À la date de ce rapport (28 octobre 2026), aucun email d’invitation ou de validation ni SSO n’était livré ; le domaine EPITA ne prouvait pas la possession de l’adresse. La confirmation d’adresse par SMTP a été ajoutée le 21 novembre 2026 et n’est pas couverte par les résultats ci-dessus. GitHub et Slack ne sont pas implémentés : leurs écrans « À venir » et leur message au clic sont intentionnels. Les captures Linear fournies servent de référence, sans nouvelle observation de Linear ni copie de ses ressources.
 
 Chrome a été testé en bureau et en viewport mobile ; pas de téléphone physique, Safari ou Firefox. Pas de test de charge à l’échelle de l’école, de déploiement de son reverse proxy HTTPS ni de qualification de sa base distante. Le scan HIGH/CRITICAL daté n’est pas une garantie d’absence de vulnérabilité. La PR ne fusionne ni ne déploie automatiquement l’application à l’école.

@@ -8,7 +8,7 @@ export const PROJECT_STATUSES = ['backlog', 'planned', 'in_progress', 'completed
 export type ProjectStatus = typeof PROJECT_STATUSES[number];
 export const PROJECT_STATUS_NAMES: Record<ProjectStatus, string> = { backlog: 'À étudier', planned: 'Planifié', in_progress: 'En cours', completed: 'Terminé', canceled: 'Annulé' };
 export interface User { id: number; email: string; username: string; displayName: string; title: string; profileCompleted: boolean; }
-export interface AuthSession { user: User; csrfToken: string; }
+export interface AuthSession { user: User; csrfToken: string; emailVerified: boolean; }
 export interface Workspace { id: number; name: string; slug: string; role: 'owner'|'member'|'guest'; onboardingCompleted: boolean; initialProjectId: number | null; }
 export interface WorkspaceMember extends User { role: 'owner'|'member'|'guest'; }
 export interface WorkspaceInvitation { id: number; email: string; createdAt: string; expiresAt: string; }

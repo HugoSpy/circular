@@ -129,6 +129,10 @@ class SpacesService:
     def respond(self, invitation_id: int, email: str, accept: bool) -> dict | None:
         with self.database.connect(write=True) as connection:
             repo = SpacesRepository(connection, self.user_id)
+            from backend.app.repositories.auth import AuthRepository
+            user = AuthRepository(connection).user(self.user_id)
+            if not user or not user["email_verified"]:
+                raise DomainError(403, "Confirmez votre adresse e-mail avant d’accepter une invitation.")
             invitation = WorkspaceService.require(repo.invitation(invitation_id, email, lock=False), "Invitation introuvable ou expirée.")
             # Member removal takes the same container lock before deleting pending
             # invitations. Re-read after acquiring it: an earlier removal wins.
@@ -163,6 +167,11 @@ class SpacesService:
     def use_link(self, token: str, *, accept: bool = False) -> dict:
         with self.database.connect(write=accept) as connection:
             repo = SpacesRepository(connection, self.user_id)
+            if accept:
+                from backend.app.repositories.auth import AuthRepository
+                user = AuthRepository(connection).user(self.user_id)
+                if not user or not user["email_verified"]:
+                    raise DomainError(403, "Confirmez votre adresse e-mail avant de rejoindre cet espace.")
             link = WorkspaceService.require(repo.link(verifier(token), lock=accept), "Lien introuvable ou expiré.")
             if accept:
                 return repo.join(link["workspace_id"])

@@ -1,5 +1,6 @@
 """Real cookie authentication and authorization boundaries, without an auth bypass."""
 import hashlib
+import sqlite3
 import time
 from pathlib import Path
 import pytest
@@ -9,11 +10,14 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from backend.app.api.auth import router, require_user
 from backend.app.core.security import LocalSecurityMiddleware
+from backend.app.core.config import verification_url
 from backend.app.core.passwords import verify_password
 from backend.app.db.session import Database
 from backend.app.services.auth import AuthService
 from backend.app.services.workspace import DomainError
+from backend.app.repositories.auth import AuthRepository
 from fastapi import Depends
+from tests.helpers import enable_test_mailer
 
 PASSWORD = "Une phrase de passe fictive 42!"
 NEW_PASSWORD = "Une autre phrase de passe 84!"
@@ -45,13 +49,17 @@ def auth_app(path: Path) -> FastAPI:
 @pytest.fixture
 def auth(tmp_path):
     app = auth_app(tmp_path / "auth.sqlite")
+    enable_test_mailer(app)
     with TestClient(app, base_url="http://127.0.0.1:4310") as client:
         yield client, app.state.auth
 
 
 def register(client, email="alice@epita.fr", username="Alice", password=PASSWORD):
     response = client.post("/api/auth/register", json={"email": email, "username": username, "password": password})
-    assert response.status_code == 201, response.text
+    assert response.status_code == 202, response.text
+    token = client.app.state.test_email_outbox[email.strip().lower()]
+    response = client.post("/api/auth/verification/confirm", json={"token": token})
+    assert response.status_code == 200, response.text
     client.headers["X-CSRF-Token"] = response.json()["csrfToken"]
     return response
 
@@ -59,7 +67,8 @@ def register(client, email="alice@epita.fr", username="Alice", password=PASSWORD
 def test_registration_hash_cookie_and_persisted_session(auth):
     client, service = auth
     response = register(client, " Alice@EPITA.FR ")
-    assert set(response.json()) == {"user", "csrfToken"}
+    assert set(response.json()) == {"user", "csrfToken", "emailVerified"}
+    assert response.json()["emailVerified"] is True
     assert response.json()["user"] == {"id": 1, "email": "alice@epita.fr", "username": "Alice", "displayName": "Alice", "title": "", "profileCompleted": False}
     assert "password" not in response.text and "token_hash" not in response.text
     cookie = response.headers["set-cookie"]
@@ -74,6 +83,14 @@ def test_registration_hash_cookie_and_persisted_session(auth):
     assert token not in str(session)
     reopened = AuthService(Database(service.database.path))
     assert reopened.authenticate(token) == response.json()
+
+
+def test_verification_token_is_carried_in_url_fragment_not_http_query(monkeypatch):
+    monkeypatch.setenv("CIRCULAR_ENV", "development")
+    monkeypatch.setenv("CIRCULAR_PUBLIC_URL", "https://circular.example")
+    link = verification_url("secret-token")
+    assert link == "https://circular.example/#verification=secret-token"
+    assert "?" not in link
 
 
 @pytest.mark.parametrize("email", ["alice@example.com", "alice@epita.fr.example.com", "alice@sub.epita.fr", "alice@@epita.fr", "a..b@epita.fr", ".alice@epita.fr"])
@@ -98,13 +115,60 @@ def test_case_insensitive_uniqueness_and_login_with_pseudo_or_email(auth):
     client, _ = auth
     register(client)
     duplicate = client.post("/api/auth/register", json={"email": "ALICE@epita.fr", "username": "Other", "password": PASSWORD})
-    assert duplicate.status_code == 409
+    assert duplicate.status_code == 202
+    assert "set-cookie" not in duplicate.headers
+    assert duplicate.json() == client.post("/api/auth/register", json={"email": "absent@epita.fr", "username": "Other", "password": PASSWORD}).json()
     duplicate_name = client.post("/api/auth/register", json={"email": "other@epita.fr", "username": "aLiCe", "password": PASSWORD})
-    assert duplicate_name.status_code == 409
+    assert duplicate_name.status_code == 202
     for identifier in (" ALICE ", "ALICE@EPITA.FR"):
         result = client.post("/api/auth/login", json={"identifier": identifier, "password": PASSWORD})
         assert result.status_code == 200
         assert result.json()["user"]["email"] == "alice@epita.fr"
+
+
+def test_registration_is_neutral_until_single_use_email_confirmation(auth):
+    client, service = auth
+    accepted = client.post("/api/auth/register", json={"email": "confirm@epita.fr", "username": "Confirm", "password": PASSWORD})
+    assert accepted.status_code == 202
+    assert accepted.json() == {"message": "Si cette adresse peut être utilisée, un lien de confirmation vient d’y être envoyé. Si vous avez déjà un compte, connectez-vous."}
+    assert "set-cookie" not in accepted.headers
+    token = client.app.state.test_email_outbox["confirm@epita.fr"]
+    with service.database.connect() as db:
+        assert db.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0
+        pending = dict(db.execute("SELECT * FROM pending_accounts").fetchone())
+    assert hashlib.sha256(token.encode()).hexdigest() == pending["token_hash"]
+    confirmed = client.post("/api/auth/verification/confirm", json={"token": token})
+    assert confirmed.status_code == 200 and confirmed.json()["emailVerified"] is True
+    assert client.post("/api/auth/verification/confirm", json={"token": token}).status_code == 400
+
+
+def test_resend_rotates_pending_link_and_unknown_address_has_same_reply(auth):
+    client, service = auth
+    accepted = client.post("/api/auth/register", json={"email": "resend@epita.fr", "username": "Resend", "password": PASSWORD})
+    assert accepted.status_code == 202
+    old_token = client.app.state.test_email_outbox["resend@epita.fr"]
+    with service.database.connect(write=True) as db:
+        db.execute("UPDATE pending_accounts SET expires_at = ? WHERE email = ?", (int(time.time()) - 1, "resend@epita.fr"))
+    resent = client.post("/api/auth/verification/resend", json={"email": "RESEND@EPITA.FR"})
+    absent = client.post("/api/auth/verification/resend", json={"email": "absent@epita.fr"})
+    assert resent.status_code == absent.status_code == 202
+    assert resent.json() == absent.json() == accepted.json()
+    new_token = client.app.state.test_email_outbox["resend@epita.fr"]
+    assert new_token != old_token
+    assert client.post("/api/auth/verification/confirm", json={"token": old_token}).status_code == 400
+    assert client.post("/api/auth/verification/confirm", json={"token": new_token}).status_code == 200
+
+
+def test_unknown_integrity_failure_is_not_reported_as_account_conflict(auth, monkeypatch):
+    client, _service = auth
+
+    def fail_pending(*_args, **_kwargs):
+        raise sqlite3.IntegrityError("CHECK constraint failed: unexpected_condition")
+
+    monkeypatch.setattr(AuthRepository, "create_pending", fail_pending)
+    response = client.post("/api/auth/register", json={"email": "failure@epita.fr", "username": "Failure", "password": PASSWORD})
+    assert response.status_code == 503
+    assert "pseudo" not in response.json()["error"]
 
 
 def test_unknown_and_wrong_password_have_same_failure(auth):
@@ -204,7 +268,7 @@ def test_operator_reset_revokes_sessions_without_public_endpoint(auth):
 def test_another_sessions_csrf_token_is_rejected(auth):
     client, service = auth
     first = register(client).json()
-    second, _ = service.register("bob@epita.fr", "Bob", PASSWORD, "another-peer")
+    second, _ = service.login("Alice", PASSWORD, "another-peer")
     client.headers["X-CSRF-Token"] = second["csrfToken"]
     assert client.patch("/api/protected", json={}).status_code == 403
     assert client.get("/api/auth/me").json()["user"] == first["user"]
@@ -220,7 +284,9 @@ def test_non_ascii_csrf_header_is_rejected_without_server_error(auth):
 def test_production_cookie_origin_and_hsts(tmp_path, monkeypatch):
     monkeypatch.setenv("CIRCULAR_ENV", "production")
     monkeypatch.setenv("CIRCULAR_PUBLIC_URL", "https://circular.epita.fr")
-    with TestClient(auth_app(tmp_path / "production-auth.sqlite"), base_url="https://circular.epita.fr") as client:
+    app = auth_app(tmp_path / "production-auth.sqlite")
+    enable_test_mailer(app)
+    with TestClient(app, base_url="https://circular.epita.fr") as client:
         blocked = client.post("/api/auth/register", json={"email": "alice@epita.fr", "username": "Alice", "password": PASSWORD}, headers={"origin": "https://untrusted.example"})
         assert blocked.status_code == 403
         response = register(client)

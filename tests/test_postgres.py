@@ -12,6 +12,7 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 from backend.app.main import create_app
+from tests.helpers import register_verified
 from backend.app.db.postgres import Record, compile_sql
 from backend.app.db.session import Database
 from backend.import_sqlite import import_sqlite
@@ -201,9 +202,7 @@ def test_postgres_authenticated_api_collaboration_and_restart(postgres_url):
         assert alice.get("/api/projects").status_code == 401
         users = []
         for client, name in ((alice, "AlicePG"), (bob, "BobPG"), (outsider, "CharliePG")):
-            response = client.post("/api/auth/register", json={"username": name, "email": name.lower() + "@epita.fr", "password": "Une phrase PostgreSQL fictive 42!"})
-            assert response.status_code == 201
-            client.headers["X-CSRF-Token"] = response.json()["csrfToken"]
+            response = register_verified(client, name.lower() + "@epita.fr", name, "Une phrase PostgreSQL fictive 42!")
             users.append(response.json()["user"])
         response = alice.post("/api/projects", json={"name": "Projet privé PostgreSQL", "key": "PGAPI"})
         assert response.status_code == 201
