@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Édition et révisions — Circular Docs</title>
+<style>
+:root{color-scheme:dark;font:15px/1.55 system-ui,sans-serif;--bg:#121315;--panel:#191a1e;--line:#383a43;--ink:#f1f1f3;--muted:#aeb0ba;--accent:#f2cf63;--active:#332e1e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}[hidden]{display:none!important}
+header{height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem clamp(1rem,4vw,2.5rem)}.brand{display:flex;align-items:center;gap:.68rem;font-weight:700}.brand i{width:22px;height:22px;border-radius:50%;border:4px solid var(--accent);border-right-color:transparent;transform:rotate(-35deg)}.account,.muted{color:var(--muted);font-size:.87rem}
+.shell{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:calc(100dvh - 68px)}aside{padding:1.15rem;background:#16171a;border-right:1px solid var(--line)}summary{cursor:pointer;font-weight:650;padding:.55rem 0}aside nav a{display:block;color:var(--ink);text-decoration:none;padding:.6rem .7rem;border-radius:7px}aside nav a[aria-current]{background:var(--active);color:var(--accent)}aside p{margin-top:1.25rem}.child{margin-left:1rem}
+main{padding:clamp(1rem,4vw,3rem);width:min(100%,1120px);margin:0 auto}.crumb{font-size:.87rem;color:var(--muted)}a{color:var(--accent)}h1{font-size:clamp(1.85rem,5vw,2.65rem);letter-spacing:-.035em;line-height:1.2;margin:.6rem 0 1rem}h2{font-size:1.15rem;margin:0 0 .4rem}h3{margin:.25rem 0 .8rem}p{margin:.55rem 0;color:var(--muted)}
+button,select,input,textarea{font:inherit;color:inherit;background:#222328;border:1px solid var(--line);border-radius:7px;padding:.55rem .8rem}button,select{min-height:44px}button{cursor:pointer}button:hover{filter:brightness(1.14)}button[aria-pressed=true],.primary{background:var(--accent);border-color:var(--accent);color:#211e13;font-weight:650}:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.row{display:flex;align-items:center;flex-wrap:wrap;gap:.5rem}.panel{margin-top:1rem;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:1rem}.top{justify-content:space-between;margin-bottom:1rem}.top>div{display:flex;gap:.5rem;flex-wrap:wrap}.panel label,.source-label{display:block;font-weight:600;margin:0 0 .35rem}.page-title{width:100%;margin-bottom:.85rem}.toolbar{border-bottom:1px solid var(--line);padding-bottom:.7rem;margin-bottom:.75rem}.toolbar button{min-width:43px}.paper,.source{min-height:255px;line-height:1.7;width:100%;padding:1rem;overflow-wrap:anywhere}.paper h2{font-size:1.35rem}.paper p{color:var(--ink)}.source{font-family:ui-monospace,monospace;font-size:.87rem;resize:vertical}.status{min-height:1.6rem}.ok{color:#c5e3ad}.warning{color:#ffb2a9}.notice{border-inline-start:3px solid var(--accent);padding:.65rem .85rem;background:var(--active);border-radius:4px}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0}.compare pre,dialog pre{max-height:18rem;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--bg);border-radius:7px;padding:.8rem;font-size:.86rem}.history-row{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;padding:.9rem 0}.history-row+.history-row{border-top:1px solid var(--line)}
+dialog{width:min(calc(100% - 2rem),520px);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:1.25rem}dialog::backdrop{background:#0009}dialog .row{justify-content:flex-end;margin-top:1rem}.demo{border-top:1px solid var(--line);margin-top:2rem;padding-top:.9rem}
+@media(max-width:660px){.shell{display:block}aside{border-right:0;border-bottom:1px solid var(--line);padding:.5rem 1rem}.account{display:none}.compare{grid-template-columns:1fr}.panel{padding:.8rem}.toolbar button{padding:.4rem .55rem}}
+</style>
+</head>
+<body>
+<header><div class="brand"><i aria-hidden="true"></i>Circular Docs</div><span class="account">camille.exemple@epita.fr</span></header>
+<div class="shell">
+<aside><details id="nav" open><summary>Navigation</summary><nav aria-label="Espaces et pages">
+<a href="#top">Mes espaces</a><a href="#top">Invitations reçues</a><p class="muted">Forum des associations</p>
+<a href="#top">Plan du forum</a><a class="child" href="#top" aria-current="page">Accueil des exposants</a>
+</nav></details></aside>
+<main id="top">
+<nav class="crumb" aria-label="Fil d’Ariane"><a href="#top">Forum des associations</a> / <a href="#top">Plan du forum</a></nav>
+<h1 tabindex="-1">Accueil des exposants</h1>
+<div class="row top"><div><button id="visual" aria-pressed="true">Visuel</button><button id="source" aria-pressed="false">Source Markdown</button></div>
+<div><button id="history">Historique</button></div></div>
+<p class="status ok" id="status" role="status">Enregistré · révision 3</p>
+<div class="row" id="retry-row" hidden><button id="retry">Réessayer la sauvegarde</button></div>
+<p class="notice" id="unsupported" hidden>Ce contenu ne peut pas être converti fidèlement. Continuez la modification en mode source.</p>
+<section class="panel" id="editor" aria-label="Éditeur de page">
+<label for="title">Titre de la page</label><input class="page-title" id="title" value="Accueil des exposants" maxlength="160">
+<div id="visual-panel"><div class="row toolbar" role="group" aria-label="Mise en forme">
+<button data-format="bold" aria-label="Gras"><b>G</b></button><button data-format="italic" aria-label="Italique"><i>I</i></button>
+<button data-format="heading" aria-label="Titre de section">Titre</button><button data-format="list" aria-label="Liste à puces">Liste</button>
+<button data-format="numbered" aria-label="Liste numérotée">1.</button><button data-format="task" aria-label="Liste de tâches">Tâche</button>
+<button data-format="quote" aria-label="Citation">Citation</button><button data-format="code" aria-label="Code">&lt;/&gt;</button>
+<button data-format="link" aria-label="Insérer un lien">Lien</button>
+</div>
+<div class="paper" id="paper" role="textbox" aria-label="Contenu de la page" aria-multiline="true" contenteditable="true"><h2>Avant l’ouverture</h2><p>Ouvrir l’accueil à <strong>8 h 30</strong> et distribuer les badges.</p><ul><li>Vérifier le plan des stands</li><li>Préparer la table d’accueil</li></ul></div></div>
+<div id="source-panel" hidden><label for="markdown">Source Markdown</label><textarea class="source" id="markdown"></textarea></div>
+</section>
+<section class="panel" id="conflict" aria-labelledby="conflict-title" hidden>
+<h2 id="conflict-title" tabindex="-1">Une autre version a été enregistrée</h2><p>Comparez votre brouillon avec la version enregistrée avant de reprendre la modification.</p>
+<div class="compare"><div><h3>Votre brouillon</h3><pre id="draft-preview"></pre></div><div><h3>Version enregistrée · révision 4</h3><pre>## Avant l’ouverture
+
+Ouvrir l’accueil à **8 h 45** et distribuer les badges.
+
+- Vérifier le plan des stands
+- Préparer la table d’accueil</pre></div></div>
+<div class="row"><button class="primary" id="reconcile">Reprendre avec mon brouillon</button><button id="use-saved">Utiliser la version enregistrée</button></div>
+</section>
+<section class="panel" id="revisions" aria-labelledby="history-title" hidden>
+<div class="row top"><h2 id="history-title" tabindex="-1">Historique des révisions</h2><button id="close-history">Fermer</button></div>
+<div class="history-row"><div><b>Révision 3 · version actuelle</b><p>Camille · 22 novembre, 10 h 15</p></div></div>
+<div class="history-row"><div><b>Révision 2</b><p>Alex · 22 novembre, 9 h 40</p></div><button id="preview">Afficher la révision 2</button></div>
+<div class="history-row"><div><b>Révision 1</b><p>Camille · 21 novembre</p></div><button id="preview-first">Afficher la révision 1</button></div>
+</section>
+<div class="row demo"><label for="scenario">Aperçu de la maquette</label><select id="scenario"><option value="normal">Modification</option><option value="waiting">Enregistrement en cours</option><option value="error">Erreur de sauvegarde</option><option value="conflict">Conflit entre deux éditeurs</option><option value="unsupported">Source non convertible</option><option value="history">Historique et restauration</option><option value="reader">Lecture seule</option></select></div>
+</main></div>
+<dialog id="revision" aria-labelledby="preview-title"><h2 id="preview-title"></h2><pre>## Avant l’ouverture
+
+Ouvrir l’accueil à 9 h et distribuer les badges.</pre><p>La restauration crée une nouvelle révision.</p><div class="row"><button id="cancel">Annuler</button><button id="restore" class="primary">Restaurer cette révision</button></div></dialog>
+<script>
+const by = id => document.getElementById(id);
+const markdown = by('markdown');
+const sample = '## Avant l’ouverture\n\nOuvrir l’accueil à **8 h 30** et distribuer les badges.\n\n- Vérifier le plan des stands\n- Préparer la table d’accueil\n';
+const saved = sample.replace('8 h 30','8 h 45');
+markdown.value = sample;
+let timer, restoreTrigger, scenario = 'normal';
+function modes(view) {
+  by('visual-panel').hidden = view !== 'visual';
+  by('source-panel').hidden = view !== 'source';
+  for (const mode of ['visual','source']) by(mode).setAttribute('aria-pressed', String(mode === view));
+}
+function status(text, warn = false) { by('status').textContent = text; by('status').className = 'status ' + (warn ? 'warning' : 'ok'); }
+function savedState(text = 'Enregistré · révision 3') { by('retry-row').hidden = true; status(text); }
+function draftChanged() {
+  clearTimeout(timer);
+  if (scenario !== 'normal') return;
+  status('Enregistrement…');
+  timer = setTimeout(() => savedState('Enregistré · révision 4'), 900);
+}
+by('title').addEventListener('input', draftChanged);
+markdown.addEventListener('input', draftChanged);
+by('paper').addEventListener('input', draftChanged);
+const formatting = {bold:['bold'],italic:['italic'],heading:['formatBlock','h2'],list:['insertUnorderedList'],numbered:['insertOrderedList'],task:['insertText','☐ '],quote:['formatBlock','blockquote'],code:['formatBlock','pre'],link:['insertText','[Libellé](https://exemple.fr)']};
+document.querySelectorAll('[data-format]').forEach(button => button.addEventListener('click', () => {
+  const [command, argument] = formatting[button.dataset.format];
+  by('paper').focus(); document.execCommand(command, false, argument); draftChanged();
+}));
+by('visual').addEventListener('click', () => { if (scenario !== 'unsupported') modes('visual'); });
+by('source').addEventListener('click', () => modes('source'));
+by('retry').addEventListener('click', () => { by('retry-row').hidden = true; status('Enregistrement…'); setTimeout(() => savedState('Enregistré · révision 4'), 500); });
+by('history').addEventListener('click', () => { by('revisions').hidden = false; by('history-title').focus(); });
+by('close-history').addEventListener('click', () => { by('revisions').hidden = true; by('history').focus(); });
+for (const [button, number] of [['preview',2],['preview-first',1]]) {
+  by(button).addEventListener('click', () => { restoreTrigger = by(button); by('preview-title').textContent = 'Révision ' + number; by('revision').showModal(); });
+}
+by('cancel').addEventListener('click', () => by('revision').close());
+by('restore').addEventListener('click', () => { by('revision').close(); savedState('Révision restaurée · révision 4'); });
+by('revision').addEventListener('close', () => restoreTrigger?.focus());
+by('reconcile').addEventListener('click', () => { by('conflict').hidden = true; status('Brouillon à vérifier'); modes('source'); markdown.focus(); });
+by('use-saved').addEventListener('click', () => { markdown.value = saved; by('conflict').hidden = true; savedState('Enregistré · révision 4'); modes('source'); markdown.focus(); });
+by('scenario').addEventListener('change', event => {
+  clearTimeout(timer); scenario = event.target.value;
+  for (const id of ['retry-row','conflict','unsupported','revisions']) by(id).hidden = true;
+  savedState(); modes('visual'); markdown.value = sample;
+  const reading = scenario === 'reader';
+  by('title').readOnly = reading; markdown.readOnly = reading; by('paper').contentEditable = String(!reading);
+  document.querySelector('.toolbar').hidden = reading; by('history').hidden = reading;
+  if (reading) status('Lecture seule');
+  if (scenario === 'waiting') status('Enregistrement…');
+  if (scenario === 'error') { status('Échec de la sauvegarde. Votre brouillon est conservé.', true); by('retry-row').hidden = false; }
+  if (scenario === 'unsupported') { modes('source'); markdown.value += '\n<details><summary>Rappel</summary>Prévoir les badges.</details>\n'; by('unsupported').hidden = false; }
+  if (scenario === 'conflict') { by('conflict').hidden = false; by('draft-preview').textContent = markdown.value; status('Brouillon conservé · conflit de sauvegarde', true); }
+  if (scenario === 'history') by('revisions').hidden = false;
+});
+if (matchMedia('(max-width:660px)').matches) by('nav').open = false;
+</script>
+</body>
+</html>

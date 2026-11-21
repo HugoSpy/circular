@@ -68,3 +68,9 @@ Format d’une entrée
 - Fait observé — La compilation a rejeté l’accès à la page parente dans un formulaire. Le premier scénario de révocation a attendu le libellé exact du sélecteur de rôle jusqu’à expiration.
 - Cause — Deux types de formulaire partageaient une variante de l’union TypeScript. Le test ciblait la structure du libellé plutôt que le nom accessible affiché dans la trace.
 - Règle vérifiable — Déclarer une variante annotée par action lorsque les champs diffèrent. Pour une sélection Playwright, utiliser le rôle et le nom accessible confirmés dans l’arbre d’accessibilité.
+
+### 2026-11-22 — Éditeur Markdown de Circular Docs
+
+- Fait observé — Le premier test de saisie visuelle a placé le texte au début du paragraphe alors que le scénario l’attendait à la fin.
+- Cause — La touche `End` a été utilisée comme raccourci de déplacement du curseur dans un contrôle éditable, avec un comportement différent sur macOS.
+- Règle vérifiable — Quand le test vise la sérialisation d’un contenu, saisir le texte complet dans le contrôle accessible. Tester les raccourcis propres à chaque plateforme dans un scénario dédié.

@@ -35,6 +35,8 @@ Le [contrat du lot 2 et la maquette approuvée](circular-docs/espaces.md) décri
 
 ## Lot 3 — Éditeur Markdown, sauvegarde et révisions
 
+Le [contrat d’édition du lot 3 et la maquette approuvée](circular-docs/edition.md) décrivent la conversion Markdown, les erreurs de sauvegarde et la restauration.
+
 - **Livrables.** Stocker le titre, la source Markdown et le numéro de révision. Fournir l’éditeur visuel et la vue source, l’autosauvegarde, la reprise après erreur, l’historique et la restauration d’une révision. Couvrir les formats de DOC-02. Maintenir la page en mode source lorsque l’éditeur visuel ne peut pas représenter le contenu fidèlement.
 - **Contrat.** Figer le sous-ensemble Markdown et ses règles de conversion à partir d’exemples représentatifs, dont les références internes du lot 4. Chaque sauvegarde transporte la révision attendue et un identifiant de requête. Après vérification des droits, le serveur rejoue le résultat d’une requête déjà appliquée si son contenu est identique. Un identifiant réutilisé avec un contenu différent ou une révision périmée reçoit `409`. Une sauvegarde modifiée crée un instantané immuable du titre et du corps avec son auteur. La restauration d’une ancienne révision crée une nouvelle révision et suit les mêmes contrôles. Au lot 4, la mise à jour de l’index des liens rejoint cette transaction.
 - **Critère de sortie.** Deux éditeurs chargent la révision 3. Le premier crée la révision 4. Le second voit le conflit, garde son brouillon et peut le comparer à la version enregistrée. Rejouer la première demande après une réponse perdue ne duplique pas la révision. La vérification de conversion couvre le cycle source, visuel, source ainsi que le maintien en mode source si nécessaire.
