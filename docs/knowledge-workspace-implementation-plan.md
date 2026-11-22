@@ -59,6 +59,8 @@ Le [contrat du lot 5 et la maquette approuvée](circular-docs/corbeille-export.m
 
 ## Lot 6 — Recette du pilote
 
+Le [rapport de recette locale du lot 6](circular-docs/recette-pilote.md) documente les six scénarios sur données fictives, les mesures et les vérifications qui restent à conduire avec l’équipe pilote.
+
 - Identifier l’équipe et le projet pilote. Parcourir le scénario complet avec les rôles propriétaire, éditeur et lecteur, sur ordinateur et mobile. Utiliser un jeu de données fictif pour la recette reproductible et un ticket Circular accessible uniquement aux personnes autorisées.
 - Vérifier sur PostgreSQL les permissions, les collisions de sauvegarde, la reprise après perte de réponse et les mutations d’arborescence concurrentes. Utiliser Playwright pour les parcours navigateur et vérifier le ZIP extrait indépendamment de l’interface.
 - Pour chaque test de régression ajouté ou étendu, constater l’échec attendu après une mutation temporaire, restaurer le comportement et relancer le test. Avant chaque push dans Circular, suivre les commandes et règles de compte rendu du workflow. Les commandes du futur dépôt seront consignées avec son socle.

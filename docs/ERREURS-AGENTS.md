@@ -101,3 +101,15 @@ Format d’une entrée
 - Fait observé — Une commande d’inventaire a renvoyé une erreur lorsqu’aucun fichier temporaire ne correspondait à un motif.
 - Cause — Le développement de motif dans zsh interrompt la commande quand le motif ne correspond à aucun chemin.
 - Règle vérifiable — Pour un inventaire de diagnostics facultatifs, utiliser `find -name` avec un motif entre guillemets.
+
+### 2026-11-22 — Recette locale du pilote Circular Docs
+
+- Fait observé — Deux lectures ont supposé un chemin inexistant et des motifs zsh ont interrompu la recherche en l’absence de correspondance.
+- Cause — Les recherches ont utilisé des chemins ou des motifs shell avant de vérifier l’organisation du code.
+- Règle vérifiable — Utiliser `rg --files` pour localiser le fichier, ou `rg -g` avec un motif cité pour filtrer les fichiers pendant la recherche.
+- Fait observé — Le premier lancement du parcours croisé a passé la commande Uvicorn comme argument à `export`.
+- Cause — Une substitution textuelle a conservé ensemble une affectation et la commande suivante.
+- Règle vérifiable — Séparer l’export des variables et le lancement du serveur sur deux lignes. Vérifier les deux lignes après génération et avant de démarrer PostgreSQL.
+- Fait observé — Une première mutation du lien a été interrompue avant son assertion, car `psql` a tenté la connexion sur le socket par défaut.
+- Cause — Le script a fourni la chaîne de connexion complète dans `PGDATABASE`, utilisé pour le nom de la base.
+- Règle vérifiable — Passer la chaîne de connexion à `psql -d` et vérifier que la mutation échoue sur la valeur métier attendue.
