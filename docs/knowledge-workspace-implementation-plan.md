@@ -43,6 +43,8 @@ Le [contrat d’édition du lot 3 et la maquette approuvée](circular-docs/editi
 
 ## Lot 4 — Références internes, backlinks et recherche
 
+Le [contrat du lot 4 et la maquette approuvée](circular-docs/liens.md) décrivent la palette, l’index des références, la recherche et les droits d’accès.
+
 - **Livrables.** Ajouter la recherche par titre et contenu, la palette de liens `[[`, les backlinks et la saisie de liens Circular. La palette affiche le fil d’Ariane pour distinguer les titres identiques.
 - **Contrat.** Analyser le Markdown et indexer les liens explicites hors des blocs et fragments de code. Utiliser `[](/pages/{id})` pour un libellé automatique et `[Libellé](/pages/{id})` pour un libellé personnalisé. Résoudre le libellé automatique à partir du titre courant. Garantir un backlink par paire source-cible, et mettre à jour l’index dans la transaction de sauvegarde ou de restauration d’une révision. La recherche filtre par accès et état actif avant de calculer extraits et résultats. Une requête vide renvoie une liste vide. Appliquer le classement titre d’abord, date de modification décroissante puis identifiant. Un lien Circular reste une URL avec un libellé saisi par l’utilisateur. L’ouverture du ticket utilise les droits de Circular.
 - **Critère de sortie.** Parmi deux pages de même titre, seule la cible choisie reçoit un backlink, même si le lien figure plusieurs fois. Renommer ou déplacer la cible conserve le lien, actualise le libellé automatique et préserve le libellé personnalisé. Une recherche avec une casse différente retrouve le contenu attendu. Un membre révoqué ne retrouve la page ni dans les résultats, ni dans les suggestions, ni dans les backlinks.

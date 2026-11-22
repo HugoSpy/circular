@@ -74,3 +74,15 @@ Format d’une entrée
 - Fait observé — Le premier test de saisie visuelle a placé le texte au début du paragraphe alors que le scénario l’attendait à la fin.
 - Cause — La touche `End` a été utilisée comme raccourci de déplacement du curseur dans un contrôle éditable, avec un comportement différent sur macOS.
 - Règle vérifiable — Quand le test vise la sérialisation d’un contenu, saisir le texte complet dans le contrôle accessible. Tester les raccourcis propres à chaque plateforme dans un scénario dédié.
+
+### 2026-11-22 — Références et recherche de Circular Docs
+
+- Fait observé — Le premier changement de la requête de déplacement a renvoyé `503` sur les déplacements valides.
+- Cause — Le remplacement textuel avait désaligné la clause `WHERE` et ses paramètres.
+- Règle vérifiable — Vérifier la requête SQL entière et l’ordre des paramètres après une modification. Relancer le parcours de déplacement concurrent sur PostgreSQL.
+- Fait observé — La première recette a trouvé un repli en mode source sur une page vide. Le diagnostic a ensuite identifié un accès aux commandes Tiptap après destruction de l’instance créée pendant le rendu suspendu.
+- Cause — L’éditeur était initialisé avant le montage du composant React et le document vide ne garantissait pas un paragraphe valide.
+- Règle vérifiable — Initialiser l’éditeur après montage, ignorer les instances détruites et tester l’ouverture d’une page vide dans le parcours réel.
+- Fait observé — La première mutation d’indexation est restée verte lorsque l’incrément du compteur de cibles a été remplacé par zéro.
+- Cause — L’opération créait quand même la clé, dont dépend l’index.
+- Règle vérifiable — Pour muter la présence d’une cible, supprimer son ajout au compteur et vérifier que le test échoue sur le backlink attendu.

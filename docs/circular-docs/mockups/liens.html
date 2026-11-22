@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Liens, backlinks et recherche — Circular Docs</title>
+<style>
+:root{color-scheme:dark;font:15px/1.5 system-ui,sans-serif;--bg:#121315;--panel:#191a1e;--raised:#222328;--edge:#383a43;--ink:#f1f1f3;--muted:#aeb0ba;--accent:#f2cf63;--active:#332e1e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}[hidden]{display:none!important}header{height:68px;border-bottom:1px solid var(--edge);display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem clamp(1rem,4vw,2.5rem)}.brand{display:flex;align-items:center;gap:.7rem;font-weight:700}.brand i{width:22px;height:22px;border:4px solid var(--accent);border-right-color:transparent;border-radius:50%;transform:rotate(-35deg)}.muted{color:var(--muted);font-size:.86rem}.shell{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:calc(100dvh - 68px)}aside{padding:1.15rem;background:#16171a;border-right:1px solid var(--edge)}summary{cursor:pointer;font-weight:650;padding:.55rem 0}aside nav button{display:block;width:100%;text-align:left;background:none;border-color:transparent}aside nav button[aria-current]{background:var(--active);color:var(--accent)}main{width:min(100%,1050px);padding:clamp(1rem,4.5vw,3rem);margin:0 auto}h1{font-size:clamp(1.85rem,6vw,2.65rem);letter-spacing:-.04em;line-height:1.15;margin:.6rem 0 1rem}h2{font-size:1.1rem;margin:0 0 .65rem}button,input,select,textarea{font:inherit;color:inherit;background:var(--raised);border:1px solid var(--edge);border-radius:7px;padding:.5rem .75rem}button,select,input{min-height:44px}button{cursor:pointer}button:hover{filter:brightness(1.18)}:focus-visible{outline:2px solid var(--accent);outline-offset:3px}a{color:var(--accent)}.primary,button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#211e13;font-weight:650}.row{display:flex;align-items:center;flex-wrap:wrap;gap:.55rem}.top{justify-content:space-between}.card{padding:1rem 1.2rem;background:var(--panel);border:1px solid var(--edge);border-radius:12px;margin-top:1rem}.card p{margin:.4rem 0}.editor{min-height:150px;padding:1rem 0;overflow-wrap:anywhere}.source{display:block;width:100%;min-height:145px;resize:vertical;font:.86rem/1.6 ui-monospace,monospace}.results{list-style:none;padding:0;margin:0}.results li+li{border-top:1px solid var(--edge)}.results button{display:block;width:100%;text-align:left;border:0;background:none;border-radius:6px;padding:.7rem}.results button:hover,.results button[aria-selected=true]{background:var(--active)}.results button strong,.results button small{display:block}.results button small{color:var(--muted);margin-top:.15rem;overflow-wrap:anywhere}.search-input{width:min(100%,40rem)}dialog{width:min(calc(100% - 2rem),520px);color:var(--ink);background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:1.2rem}dialog::backdrop{background:#0009}dialog input{width:100%;margin:.3rem 0 .6rem}dialog label{display:block}.demo{border-top:1px solid var(--edge);margin-top:2rem;padding-top:1rem}.broken{color:var(--muted);border-bottom:1px dashed var(--muted)}
+@media(max-width:660px){.shell{display:block}.account{display:none}aside{border-right:0;border-bottom:1px solid var(--edge);padding:.5rem 1rem}.card{padding:.8rem}.results button{padding:.6rem .35rem}}
+</style>
+</head>
+<body>
+<header><div class="brand"><i aria-hidden="true"></i>Circular Docs</div><span class="muted account">camille.exemple@epita.fr</span></header>
+<div class="shell">
+<aside><details id="navigation" open><summary>Navigation</summary><nav aria-label="Espaces et pages">
+<button data-view="page">Mes espaces</button><button data-view="search">Rechercher</button><button data-view="page">Invitations reçues</button>
+<p class="muted">Forum des associations</p><button data-view="page">Accueil des exposants</button></nav></details></aside>
+<main>
+<section id="page">
+<div class="muted" id="crumb">Forum des associations / Plan du forum</div>
+<h1 id="page-title" tabindex="-1">Accueil des exposants</h1>
+<div class="row top"><div class="row"><button id="visual" aria-pressed="true">Visuel</button><button id="source" aria-pressed="false">Source Markdown</button></div><div class="row"><button id="insert">Insérer un lien interne</button><button id="ticket">Lien vers un ticket Circular</button></div></div>
+<div class="card"><div class="editor" role="textbox" aria-label="Contenu de la page" aria-multiline="true" contenteditable id="body"><p>Retrouvez la feuille de route pour la remise des badges.</p><p id="inserted"></p></div><textarea class="source" id="markdown" aria-label="Source Markdown" hidden>Retrouvez la feuille de route pour la remise des badges.</textarea></div>
+<div class="card"><h2>Pages qui pointent ici</h2><ul class="results" id="backlinks"><li><button data-view="page"><strong>Plan du forum</strong><small>Forum des associations / Plan du forum</small></button></li></ul><p id="none" class="muted" hidden>Aucun backlink.</p></div>
+</section>
+<section id="search" hidden><h1 tabindex="-1">Rechercher</h1><div class="row"><input class="search-input" id="query" type="search" aria-label="Rechercher dans les espaces" placeholder="Titre ou contenu d’une page"></div>
+<div class="card"><p id="search-status" class="muted" role="status">Saisissez un terme pour rechercher.</p><ul class="results" id="findings"></ul></div></section>
+<div class="row demo"><label class="muted" for="scenario">Aperçu de la maquette</label><select id="scenario"><option value="normal">Liens et backlinks</option><option value="search">Recherche</option><option value="renamed">Cible renommée et déplacée</option><option value="missing">Cible indisponible</option><option value="empty">Aucun backlink</option><option value="revoked">Accès révoqué</option></select></div>
+</main></div>
+<dialog id="palette" aria-labelledby="palette-title"><h2 id="palette-title">Insérer un lien interne</h2><label for="filter">Rechercher une page dans cet espace</label><input id="filter" type="search" role="combobox" aria-expanded="true" aria-controls="options" autocomplete="off"><ul id="options" class="results" role="listbox"></ul><p id="palette-empty" class="muted" hidden>Aucune page correspondante.</p><button data-close="palette">Annuler</button></dialog>
+<dialog id="ticket-dialog" aria-labelledby="ticket-title"><form id="ticket-form"><h2 id="ticket-title">Lien vers un ticket Circular</h2><label for="label">Libellé<input id="label" required></label><label for="url">URL du ticket<input id="url" type="url" required></label><div class="row"><button type="button" data-close="ticket-dialog">Annuler</button><button class="primary">Insérer le lien</button></div></form></dialog>
+<script>
+const by = id => document.getElementById(id);
+const results = [
+  {id:'11111111-1111-4111-8111-111111111111', title:'Inscriptions', path:'Forum des associations / Exposants / Inscriptions', excerpt:'Les exposants retirent leurs badges à partir de 8 h 30.'},
+  {id:'22222222-2222-4222-8222-222222222222', title:'Inscriptions', path:'Forum des associations / Bénévoles / Inscriptions', excerpt:'Les bénévoles choisissent leur créneau avant le forum.'}
+];
+let mode = 'visual', available = true, selected = 0, filtered = [], trigger;
+function display(view) {
+  by('page').hidden = view !== 'page'; by('search').hidden = view !== 'search';
+  by(view).querySelector('h1').focus();
+  if (matchMedia('(max-width:660px)').matches) by('navigation').open = false;
+}
+function textMatches(query) {
+  const needle = query.trim().toLowerCase();
+  return available ? results.filter(value => !needle || (value.title + ' ' + value.excerpt).toLowerCase().includes(needle)) : [];
+}
+function row(result, button) {
+  const title = document.createElement('strong'); title.textContent = result.title;
+  const path = document.createElement('small'); path.textContent = result.path;
+  button.append(title, path);
+  const item = document.createElement('li'); item.append(button); return item;
+}
+function search() {
+  const needle = by('query').value.trim();
+  const matches = needle ? textMatches(needle) : [];
+  by('search-status').textContent = !needle ? 'Saisissez un terme pour rechercher.' : matches.length ? matches.length + ' résultat(s)' : 'Aucune page trouvée.';
+  by('findings').replaceChildren(...matches.map(value => {
+    const button = document.createElement('button'); button.onclick = () => openPage(value);
+    const item = row(value, button); const excerpt = document.createElement('small'); excerpt.textContent = value.excerpt; button.append(excerpt); return item;
+  }));
+}
+function openPage(page) { by('page-title').textContent = page.title; by('crumb').textContent = page.path; display('page'); }
+function setMode(next) {
+  mode = next;
+  by('body').hidden = next !== 'visual'; by('markdown').hidden = next !== 'source';
+  for (const item of ['visual','source']) by(item).setAttribute('aria-pressed', String(item === next));
+}
+function insertLink(label, href, automatic = false) {
+  const link = document.createElement('a'); link.textContent = label; link.href = href; by('inserted').append(link, ' ');
+  by('markdown').value += ' [' + (automatic ? '' : label) + '](' + href + ')';
+}
+function pick(result) {
+  if (!result) return;
+  by('markdown').value = by('markdown').value.replace(/\[\[[^\]\n]*$/, '');
+  const editor = by('body');
+  const last = editor.lastChild;
+  if (last?.nodeType === 3) last.textContent = last.textContent.replace(/\[\[[^\]\n]*$/, '');
+  insertLink(result.title, '/pages/' + result.id, true);
+  by('palette').close();
+  if (trigger === by('body') || trigger === by('markdown')) trigger.focus();
+}
+function mark(index) {
+  selected = index;
+  for (const [i, item] of [...by('options').querySelectorAll('button')].entries()) item.setAttribute('aria-selected', String(i === index));
+  if (filtered.length) by('filter').setAttribute('aria-activedescendant', 'option-' + index);
+  else by('filter').removeAttribute('aria-activedescendant');
+}
+function options() {
+  selected = 0;
+  filtered = textMatches(by('filter').value);
+  by('options').replaceChildren(...filtered.map((value, index) => {
+    const button = document.createElement('button'); button.id = 'option-' + index; button.type = 'button'; button.setAttribute('role','option'); button.onclick = () => pick(value);
+    return row(value, button);
+  }));
+  mark(0); by('palette-empty').hidden = filtered.length !== 0;
+}
+function openPalette(from) {
+  if (by('palette').open) return;
+  trigger = from; by('filter').value = ''; options(); by('palette').showModal(); by('filter').focus();
+}
+document.addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (button?.dataset.view) { display(button.dataset.view); if (button.dataset.view === 'search') by('query').focus(); }
+  if (button?.dataset.close) by(button.dataset.close).close();
+});
+by('query').addEventListener('input', search);
+by('visual').onclick = () => setMode('visual');
+by('source').onclick = () => setMode('source');
+by('insert').onclick = () => openPalette(by('insert'));
+for (const id of ['body','markdown']) by(id).addEventListener('input', event => {
+  if ((event.target.value ?? event.target.textContent).endsWith('[[')) openPalette(event.target);
+});
+by('filter').addEventListener('input', options);
+by('filter').addEventListener('keydown', event => {
+  if (!filtered.length) return;
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); mark((selected + (event.key === 'ArrowDown' ? 1 : -1) + filtered.length) % filtered.length); }
+  if (event.key === 'Enter') { event.preventDefault(); pick(filtered[selected]); }
+});
+by('palette').addEventListener('close', () => trigger?.focus());
+by('ticket').onclick = () => by('ticket-dialog').showModal();
+by('ticket-form').addEventListener('submit', event => {
+  event.preventDefault(); const url = by('url').value;
+  if (!/^https?:\/\//i.test(url)) return;
+  insertLink(by('label').value, url); by('ticket-dialog').close(); if (mode === 'source') by('markdown').focus();
+});
+by('scenario').addEventListener('change', event => {
+  const state = event.target.value; available = state !== 'revoked';
+  by('backlinks').hidden = state === 'empty' || state === 'revoked'; by('none').hidden = !by('backlinks').hidden;
+  by('inserted').replaceChildren();
+  if (state === 'renamed') { insertLink('Inscriptions exposants', '/pages/' + results[0].id, true); insertLink('Fiche d’inscription', '/pages/' + results[0].id); by('crumb').textContent = 'Forum des associations / Accueil'; }
+  else if (state === 'missing') { const span = document.createElement('span'); span.className = 'broken'; span.textContent = 'Page indisponible'; by('inserted').append(span); }
+  else by('crumb').textContent = 'Forum des associations / Plan du forum';
+  display(state === 'search' || state === 'revoked' ? 'search' : 'page');
+  if (state === 'revoked') by('query').value = 'Inscriptions';
+  search();
+});
+if (matchMedia('(max-width:660px)').matches) by('navigation').open = false;
+</script>
+</body>
+</html>
