@@ -51,6 +51,8 @@ Le [contrat du lot 4 et la maquette approuvée](circular-docs/liens.md) décrive
 
 ## Lot 5 — Corbeille et export Markdown
 
+Le [contrat du lot 5 et la maquette approuvée](circular-docs/corbeille-export.md) décrivent la restauration des sous-arbres et le téléchargement du ZIP.
+
 - **Livrables.** Mettre à la corbeille et restaurer des sous-arbres, puis exporter les pages actives dans un ZIP de Markdown UTF-8 accessible aux membres actuels.
 - **Contrat.** Définir comment marquer les pages emportées par une opération de corbeille afin de préserver une suppression antérieure lors d’une restauration. Traiter chaque opération en une transaction. Si le parent d’origine est indisponible, restaurer à la racine. Exclure les pages supprimées des surfaces actives. Pour l’export, établir la carte des chemins avant de générer les fichiers, assainir les noms et ajouter un suffixe stable afin de gérer les doublons. Utiliser un instantané cohérent des pages exportées. Réécrire les liens de page vers des chemins relatifs et produire un libellé suivi de « (page indisponible) » si la cible est absente de l’export. Conserver les URL externes et Circular.
 - **Critère de sortie.** Après suppression d’un parent, son sous-arbre disparaît des surfaces actives et ses liens entrants signalent l’indisponibilité. La restauration rétablit les liens et backlinks. Après extraction d’un ZIP contenant des titres identiques et des caractères Unicode, les liens relatifs s’ouvrent dans les deux sens et les URL externes et Circular restent utilisables. Une demande postérieure à la révocation de l’adhésion ne permet plus de télécharger l’export.

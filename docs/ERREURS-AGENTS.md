@@ -86,3 +86,18 @@ Format d’une entrée
 - Fait observé — La première mutation d’indexation est restée verte lorsque l’incrément du compteur de cibles a été remplacé par zéro.
 - Cause — L’opération créait quand même la clé, dont dépend l’index.
 - Règle vérifiable — Pour muter la présence d’une cible, supprimer son ajout au compteur et vérifier que le test échoue sur le backlink attendu.
+
+### 2026-11-22 — Corbeille et export Markdown de Circular Docs
+
+- Fait observé — Une lecture a supposé un dossier de migrations à la racine du service. Le premier suivi de la vérification de maquette a tenté de reprendre une session terminal déjà expirée.
+- Cause — Le chemin du dossier a été déduit du nom de la fonctionnalité et le résultat de la vérification n’a pas été conservé après la fin de la session.
+- Règle vérifiable — Localiser les migrations avec `rg --files` et conserver la sortie d’une vérification lancée en arrière-plan si elle doit survivre à la session terminal.
+- Fait observé — La première vérification après extraction a signalé à tort qu’un lien relatif ne menait pas au fichier cible. Le lien s’ouvrait, mais la comparaison des chemins a échoué.
+- Cause — Sur macOS, seul le chemin du lien avait été résolu à travers l’alias du dossier temporaire.
+- Règle vérifiable — Résoudre les deux chemins avec `Path.resolve(strict=True)` avant de comparer des fichiers extraits sur le disque.
+
+### 2026-11-22 — Publication de la documentation du lot 5
+
+- Fait observé — Une commande d’inventaire a renvoyé une erreur lorsqu’aucun fichier temporaire ne correspondait à un motif.
+- Cause — Le développement de motif dans zsh interrompt la commande quand le motif ne correspond à aucun chemin.
+- Règle vérifiable — Pour un inventaire de diagnostics facultatifs, utiliser `find -name` avec un motif entre guillemets.
