@@ -26,7 +26,7 @@ export class LocalServer {
   readonly url: string;
   private process?: ChildProcess;
   private output = '';
-  constructor(readonly database: string, readonly port: number) {
+  constructor(readonly database: string, readonly port: number, readonly enableMcp = false) {
     this.url = `http://127.0.0.1:${port}`;
   }
   get logs() { return this.output; }
@@ -40,7 +40,16 @@ export class LocalServer {
     for (const key of Object.keys(environment)) if (key.startsWith('CIRCULAR_')) delete environment[key];
     const child = spawn(python, ['-m', 'backend'], {
       cwd: root,
-      env: { ...environment, CIRCULAR_ENV: 'test', CIRCULAR_HOST: '127.0.0.1', CIRCULAR_DB: this.database, CIRCULAR_PORT: String(this.port), PYTHONUNBUFFERED: '1' },
+      env: {
+        ...environment,
+        CIRCULAR_ENV: 'test',
+        CIRCULAR_HOST: '127.0.0.1',
+        CIRCULAR_PUBLIC_URL: this.enableMcp ? this.url : '',
+        CIRCULAR_MCP_REDIRECT_URIS: this.enableMcp ? this.url + '/mcp-callback' : '',
+        CIRCULAR_DB: this.database,
+        CIRCULAR_PORT: String(this.port),
+        PYTHONUNBUFFERED: '1',
+      },
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -80,14 +89,15 @@ export class LocalServer {
   }
 }
 
-type Fixtures = { server: LocalServer; app: CircularPage; networkAudit: void };
+type Fixtures = { server: LocalServer; enableMcp: boolean; app: CircularPage; networkAudit: void };
 
 export const test = base.extend<Fixtures>({
-  server: async ({}, use, testInfo) => {
+  enableMcp: [false, { option: true }],
+  server: async ({ enableMcp }, use, testInfo) => {
     const dataRoot = path.resolve(root, '.test-data');
     await mkdir(dataRoot, { recursive: true });
     const directory = await mkdtemp(path.join(dataRoot, 'browser-'));
-    const server = new LocalServer(path.join(directory, 'circular.sqlite'), await freePort());
+    const server = new LocalServer(path.join(directory, 'circular.sqlite'), await freePort(), enableMcp);
     try {
       await server.start();
       await use(server);

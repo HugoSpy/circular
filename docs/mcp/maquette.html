@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connecter un assistant IA – Maquette Circular</title>
+<link rel="stylesheet" href="../../src/styles.css">
+<style>
+  main { max-width: 760px; margin: 0 auto; padding: 24px clamp(16px, 5vw, 40px) 48px; }
+  .brand { margin: 0 0 24px; }
+  nav, .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  nav { margin-bottom: 24px; }
+  nav button[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+  a.button { color: var(--text); text-decoration: none; }
+  .panel, dialog { border: 1px solid var(--line); border-radius: 10px; padding: clamp(16px, 4vw, 26px); background: var(--panel); color: var(--text); }
+  dialog { width: min(470px, calc(100% - 32px)); }
+  dialog::backdrop { background: #0009; }
+  h2 { font-size: 16px; margin: 24px 0 8px; }
+  p { color: var(--muted); }
+  .field { display: grid; gap: 6px; margin: 20px 0; }
+  input, select { width: 100%; min-width: 0; min-height: 40px; padding: 8px 10px; border: 1px solid var(--control-line); border-radius: 6px; background: var(--bg); color: var(--text); }
+  .url { display: flex; gap: 8px; }
+  .connection { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding: 12px 0 0; }
+  .connection p { margin: 2px 0 0; }
+  [role="status"]:empty { display: none; }
+  .error { color: var(--danger); }
+  @media (max-width: 420px) { .url, .connection { flex-wrap: wrap; } }
+</style>
+<main>
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Circular</div>
+  <nav aria-label="Écrans de la maquette">
+    <button class="button" data-screen="integrations" aria-current="page">Intégrations</button>
+    <button class="button" data-screen="login">Connexion</button>
+    <button class="button" data-screen="consent">Autorisation</button>
+    <button class="button" data-screen="expired">Demande expirée</button>
+  </nav>
+  <section class="panel" id="integrations">
+    <p>Paramètres › Intégrations</p>
+    <h1 tabindex="-1">Assistants IA</h1>
+    <p>Ajoutez cette adresse comme connecteur MCP dans votre assistant IA, puis autorisez l’accès depuis Circular.</p>
+    <div class="field">
+      <label for="endpoint">Adresse du serveur MCP</label>
+      <div class="url"><input id="endpoint" readonly value="https://circular.example/mcp"><button class="button" id="copy">Copier l’adresse</button></div>
+    </div>
+    <p role="status" id="feedback"></p>
+    <h2>Connexions autorisées</h2>
+    <p id="none" hidden>Aucune connexion autorisée.</p>
+    <div class="connection" id="connection">
+      <div><strong>Claude</strong><p id="connection-scope">Équipe Mobile · Lecture des projets et tickets</p></div>
+      <button class="button danger" id="revoke">Révoquer</button>
+    </div>
+  </section>
+  <section class="panel" id="login" hidden>
+    <h1 tabindex="-1">Connectez-vous à Circular</h1>
+    <p>Connectez-vous pour examiner la demande d’accès de votre assistant.</p>
+    <div class="field"><label for="identifier">E-mail ou identifiant</label><input id="identifier" autocomplete="username"></div>
+    <div class="field"><label for="password">Mot de passe</label><input id="password" type="password" autocomplete="current-password"></div>
+    <button class="button primary" id="sign-in">Se connecter</button>
+  </section>
+  <section class="panel" id="consent" hidden>
+    <h1 tabindex="-1">Autoriser Claude à lire dans Circular</h1>
+    <p>Connecté en tant que Camille Martin.</p>
+    <div class="field">
+      <label for="workspace">Espace autorisé</label>
+      <select id="workspace">
+        <option value="">Choisir un espace</option>
+        <option>Équipe Mobile</option>
+        <option>Design produit</option>
+      </select>
+    </div>
+    <h2>Accès demandé</h2>
+    <ul><li>Lister les projets auxquels vous avez accès.</li><li>Rechercher et consulter les tickets de ces projets.</li></ul>
+    <p>Les résultats sont transmis à Claude. Vous pouvez retirer son accès dans Paramètres › Intégrations.</p>
+    <div class="actions"><button class="button" id="deny">Refuser</button><button class="button primary" id="allow" disabled>Autoriser la lecture</button></div>
+  </section>
+  <section class="panel" id="result" hidden>
+    <h1 tabindex="-1" id="outcome"></h1>
+    <p>Retour dans l’assistant IA.</p>
+    <button class="button" data-screen="integrations">Voir les connexions</button>
+  </section>
+  <section class="panel" id="expired" hidden>
+    <h1 tabindex="-1">La demande a expiré</h1>
+    <p>Relancez la connexion depuis votre assistant IA pour obtenir une nouvelle demande.</p>
+    <button class="button" data-screen="integrations">Retour aux intégrations</button>
+  </section>
+  <dialog id="confirm" aria-labelledby="confirm-title">
+    <form method="dialog">
+      <h1 id="confirm-title">Révoquer l’accès de Claude ?</h1>
+      <p>Claude devra obtenir une nouvelle autorisation pour consulter cet espace.</p>
+      <div class="actions"><button class="button" value="cancel" autofocus>Annuler</button><button class="button danger" value="revoke">Révoquer l’accès</button></div>
+    </form>
+  </dialog>
+</main>
+<script>
+  const byId = (id) => document.getElementById(id);
+  const workspace = byId('workspace');
+  const connection = byId('connection');
+  const feedback = byId('feedback');
+  const confirm = byId('confirm');
+  const show = (id) => {
+    for (const screen of document.querySelectorAll('main > section')) screen.hidden = screen.id !== id;
+    for (const control of document.querySelectorAll('nav button')) {
+      if (control.dataset.screen === id) control.setAttribute('aria-current', 'page');
+      else control.removeAttribute('aria-current');
+    }
+    byId(id).querySelector('h1').focus();
+  };
+  for (const control of document.querySelectorAll('[data-screen]')) control.onclick = () => show(control.dataset.screen);
+  byId('sign-in').onclick = () => show('consent');
+  workspace.onchange = () => { byId('allow').disabled = !workspace.value; };
+  const finish = (message) => { byId('outcome').textContent = message; show('result'); };
+  byId('deny').onclick = () => finish('Accès refusé');
+  byId('allow').onclick = () => {
+    byId('connection-scope').textContent = workspace.value + ' · Lecture des projets et tickets';
+    connection.hidden = false;
+    byId('none').hidden = true;
+    feedback.textContent = '';
+    finish('Accès autorisé');
+  };
+  byId('copy').onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(byId('endpoint').value);
+      feedback.textContent = 'Adresse copiée.';
+    } catch {
+      byId('endpoint').select();
+      feedback.textContent = 'Sélectionnez et copiez l’adresse du serveur.';
+    }
+  };
+  byId('revoke').onclick = () => {
+    confirm.returnValue = 'cancel';
+    confirm.showModal();
+  };
+  confirm.onclose = () => {
+    if (confirm.returnValue === 'revoke') {
+      connection.hidden = true;
+      byId('none').hidden = false;
+      feedback.textContent = 'Accès de Claude révoqué.';
+      byId('integrations').querySelector('h1').focus();
+    }
+  };
+</script>
+</html>

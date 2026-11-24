@@ -52,6 +52,8 @@ Ne pas inclure `compose.local.yaml` en production. L’application refuse une co
 
 ## Comptes, confidentialité et partage
 
+Pour connecter un assistant IA aux projets et tickets, consulter le [guide MCP de Circular](docs/mcp/README.md).
+
 Inscription avec pseudo unique, adresse `@epita.fr` et mot de passe de 12 à 128 caractères ; connexion par pseudo ou adresse. Une confirmation par courriel est requise avant d’accéder aux invitations ciblées. En développement, le lien de confirmation apparaît dans les logs locaux ; en production, il est envoyé par le relais SMTP configuré.
 
 Un compte doit confirmer son adresse EPITA avant de recevoir ou d’accepter une invitation. Les inscriptions répondent toujours par le même message, que l’adresse soit nouvelle ou déjà utilisée. Le lien est à usage unique et expire après 30 minutes; une inscription en attente peut demander un nouveau lien pendant 24 heures. En développement, le lien est écrit dans les logs locaux ; en production, il est envoyé par SMTP. Un compte peut ensuite posséder ou rejoindre plusieurs espaces. Le menu en haut à gauche permet de changer d’espace, en créer un, accéder aux paramètres et gérer ses membres. Le propriétaire invite une adresse EPITA, même avant son inscription, ou crée un lien d’invitation révocable valable sept jours. L’adhésion exige un compte connecté confirmé et une acceptation explicite.

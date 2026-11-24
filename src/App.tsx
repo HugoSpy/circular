@@ -17,6 +17,7 @@ import { WorkspaceMenu, type WorkspaceControls } from './Workspaces';
 import { WorkspaceMembersDialog } from './WorkspaceMembers';
 
 type Modal = { kind: 'project'; project?: Project } | { kind: 'ticket'; status?: Status } | { kind: 'detail'; id: number } | { kind: 'view'; view?: SavedView } | { kind: 'deleteView'; view: SavedView } | { kind: 'members'; project: Project } | { kind: 'workspaceMembers' } | { kind: 'account' } | { kind: 'invitations' } | { kind: 'commands' } | { kind: 'help' } | null;
+function linkedIntegrations() { return new URLSearchParams(location.search).get('settings') === 'integrations'; }
 function linkedIssue(): Modal { const id = Number(new URLSearchParams(location.search).get('issue')); return Number.isSafeInteger(id) && id > 0 ? { kind: 'detail', id } : null; }
 
 export default function App({ user, onSessionEnd, onUserUpdated, workspaceControls }: { user: User; onSessionEnd: (notice?: string) => void; onUserUpdated: (user: User) => void; workspaceControls: WorkspaceControls }) {
@@ -26,8 +27,8 @@ export default function App({ user, onSessionEnd, onUserUpdated, workspaceContro
   const { settings, ready, save } = preferences;
   const { filters, display } = settings;
   const { projects, issues, labels, templates, views, error, loading, refresh, addLabel } = useWorkspace(filters, display, ready);
-  const [section, setSection] = useState<'issues'|'projects'|'settings'>('issues');
-  const [settingsTab, setSettingsTab] = useState<SettingsTab>('preferences');
+  const [section, setSection] = useState<'issues'|'projects'|'settings'>(() => linkedIntegrations() ? 'settings' : 'issues');
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>(() => linkedIntegrations() ? 'integrations' : 'preferences');
   const [modal, setModal] = useState<Modal>(linkedIssue);
   const [pageMode, setPageMode] = useState(new URLSearchParams(location.search).get('mode') === 'page');
   const [selectedViewId, setSelectedViewId] = useState<number | null>(null);
@@ -81,7 +82,7 @@ export default function App({ user, onSessionEnd, onUserUpdated, workspaceContro
   useEffect(() => {
     if (!ready || initialized.current) return;
     initialized.current = true;
-    if (settings.homeView === 'projects' && !linkedIssue()) setSection('projects');
+    if (settings.homeView === 'projects' && !linkedIssue() && !linkedIntegrations()) setSection('projects');
     if (settings.homeView === 'list' || settings.homeView === 'board') void save({ display: { ...settings.display, view: settings.homeView } }).catch(() => undefined);
   }, [ready, settings, save]);
   useEffect(() => { if (!notice) return; const timeout = setTimeout(() => setNotice(''), 4500); return () => clearTimeout(timeout); }, [notice]);

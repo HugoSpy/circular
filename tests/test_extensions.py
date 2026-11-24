@@ -243,7 +243,9 @@ def test_migration_002_preserves_original_database_and_is_idempotent(tmp_path):
         assert issue(migrated, 1)["identifier"] == "OLD-2"
         assert migrated.get("/api/projects").json()[0]["status"] == "planned"
     with sqlite3.connect(path) as connection:
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 6
+        migrations = Path(__file__).parents[1] / "backend/app/db/migrations"
+        installed = connection.execute("SELECT version FROM schema_migrations ORDER BY version").fetchall()
+        assert [row[0] for row in installed] == sorted(path.name for path in migrations.glob("[0-9]*.sql"))
 
 
 def test_missing_extension_resources(client):

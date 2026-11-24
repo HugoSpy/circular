@@ -5,7 +5,7 @@ import type { AuthSession, User } from './types';
 import { Dialog, ErrorMessage, message } from './ui';
 import './account-features.css';
 
-export function AuthGate({ children }: { children: (user: User, endSession: (notice?: string) => void, updateUser: (user: User) => void) => ReactNode }) {
+export function AuthGate({ children, mcpLogin = false }: { mcpLogin?: boolean; children: (user: User, endSession: (notice?: string) => void, updateUser: (user: User) => void) => ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -72,12 +72,12 @@ export function AuthGate({ children }: { children: (user: User, endSession: (not
   if (loading) return <main className="auth-shell"><div className="auth-card"><Brand /><p role="status">Ouverture de votre espace…</p></div></main>;
   if (error) return <main className="auth-shell"><div className="auth-card"><Brand /><h1>Connexion au serveur</h1><ErrorMessage>{error}</ErrorMessage><button className="button primary" onClick={() => setAttempt(value => value + 1)}>Réessayer</button></div></main>;
   if (session) return <>{children(session.user, endSession, user => setSession(current => current ? { ...current, user } : current))}{!session.emailVerified && <div className="verification-banner" role="status"><EnvelopeSimple size={18} aria-hidden="true" /><span>Confirmez votre adresse e-mail pour accepter les invitations.</span><button className="button subtle" disabled={resending} onClick={() => { setResending(true); setResendNotice(''); api.resendCurrentVerification().then(result => setResendNotice(result.message)).catch(error => setResendNotice(message(error))).finally(() => setResending(false)); }}>{resending ? 'Envoi…' : 'Renvoyer le lien'}</button>{resendNotice && <span>{resendNotice}</span>}</div>}</>;
-  return <LoginForm notice={notice} verificationError={verificationError} onAuthenticated={authenticated} />;
+  return <LoginForm mcpLogin={mcpLogin} notice={notice} verificationError={verificationError} onAuthenticated={authenticated} />;
 }
 
 function Brand() { return <div className="auth-brand"><span className="brand-mark" aria-hidden="true" /><span>Circular</span></div>; }
 
-function LoginForm({ notice, verificationError, onAuthenticated }: { notice: string; verificationError: string; onAuthenticated: (session: AuthSession) => void }) {
+function LoginForm({ notice, verificationError, onAuthenticated, mcpLogin }: { mcpLogin: boolean; notice: string; verificationError: string; onAuthenticated: (session: AuthSession) => void }) {
   const [register, setRegister] = useState(false);
   const [identifier, setIdentifier] = useState('');
   const [username, setUsername] = useState('');
@@ -104,7 +104,7 @@ function LoginForm({ notice, verificationError, onAuthenticated }: { notice: str
   }
   function switchMode() { setRegister(value => !value); setPassword(''); setConfirm(''); setError(''); }
   if (submittedEmail) return <main className="auth-shell"><div className="auth-card"><Brand /><EnvelopeSimple size={34} aria-hidden="true" /><p className="auth-eyebrow">VÉRIFIEZ VOTRE BOÎTE DE RÉCEPTION</p><h1>Presque terminé</h1><p className="auth-intro">Si cette adresse peut être utilisée, un lien de confirmation vient d’y être envoyé. Si vous avez déjà un compte, connectez-vous.</p><button className="button primary auth-submit" disabled={pending} onClick={async () => { setPending(true); setResendNotice(''); try { const result = await api.resendVerification(submittedEmail); setResendNotice(result.message); } catch (error) { setResendNotice(message(error)); } finally { setPending(false); } }}>{pending ? 'Envoi…' : 'Renvoyer le lien de confirmation'}<ArrowRight size={17} aria-hidden="true" /></button>{resendNotice && <p className="settings-notice" role="status">{resendNotice}</p>}<button className="button subtle" onClick={() => { setSubmittedEmail(''); setRegister(false); setError(''); }}>Revenir à la connexion</button></div></main>;
-  return <main className="auth-shell"><div className="auth-card"><Brand /><p className="auth-eyebrow">VOTRE ESPACE DE PROJET</p><h1>{register ? 'Créer un compte' : 'Se connecter'}</h1><p className="auth-intro">{register ? 'Créez vos projets privés et invitez les personnes avec qui vous travaillez.' : 'Retrouvez vos projets, vos tickets et votre équipe.'}</p>
+  return <main className="auth-shell"><div className="auth-card"><Brand /><p className="auth-eyebrow">VOTRE ESPACE DE PROJET</p><h1>{register ? 'Créer un compte' : mcpLogin ? 'Connectez-vous à Circular' : 'Se connecter'}</h1><p className="auth-intro">{register ? 'Créez vos projets privés et invitez les personnes avec qui vous travaillez.' : mcpLogin ? 'Connectez-vous pour examiner la demande d’accès de votre assistant.' : 'Retrouvez vos projets, vos tickets et votre équipe.'}</p>
     {notice && <p className="settings-notice" role="status">{notice}</p>}
     {verificationError && <ErrorMessage>{verificationError} Recommencez l’inscription ou connectez-vous.</ErrorMessage>}
     <form aria-busy={pending} onSubmit={event => { event.preventDefault(); void submit(); }}><fieldset disabled={pending}><ErrorMessage>{error}</ErrorMessage>

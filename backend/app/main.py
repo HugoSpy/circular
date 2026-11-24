@@ -11,6 +11,7 @@ from backend.app.api.auth import router as auth_router
 from backend.app.api.sharing import router as sharing_router
 from backend.app.api.spaces import router as spaces_router
 from backend.app.api.frontend import mount_frontend
+from backend.app.api.mcp import mount_mcp
 from backend.app.core.config import ROOT, database_target, email_config, public_url
 from backend.app.core.security import LocalSecurityMiddleware
 from backend.app.db.session import Database
@@ -21,7 +22,7 @@ from backend.app.services.auth import AuthService
 
 def create_app(db_path: Path | str | None = None, dist_path: Path | str | None = None) -> FastAPI:
     app = FastAPI(title="Circular", docs_url=None, redoc_url=None, openapi_url="/api/openapi.json")
-    public_url()
+    origin = public_url()
     email_config()
     app.state.database = Database(db_path or database_target())
     app.state.auth = AuthService(app.state.database)
@@ -57,5 +58,6 @@ def create_app(db_path: Path | str | None = None, dist_path: Path | str | None =
     app.include_router(auth_router)
     app.include_router(sharing_router)
     app.include_router(spaces_router)
+    mount_mcp(app, origin)
     mount_frontend(app, Path(dist_path) if dist_path is not None else ROOT / "dist")
     return app

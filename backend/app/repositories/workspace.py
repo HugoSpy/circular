@@ -62,9 +62,15 @@ class WorkspaceRepository:
             result["role"] = "owner" if self.user_id is None or owner["owner_user_id"] == self.user_id or workspace_owner else "member"
         return result
 
-    def projects(self) -> list[dict]:
+    def projects(self, *, limit: int | None = None, after_id: int = 0) -> list[dict]:
         access, values = self.access_clause()
-        return [self.project(row["id"]) for row in self.connection.execute(f"SELECT id FROM projects p WHERE {access} ORDER BY id", values)]
+        query = f"SELECT id FROM projects p WHERE {access}"
+        if limit is not None:
+            query += " AND p.id > ? ORDER BY p.id LIMIT ?"
+            values.extend([after_id, limit])
+        else:
+            query += " ORDER BY p.id"
+        return [self.project(row["id"]) for row in self.connection.execute(query, values)]
 
     def create_project(self, data: dict) -> dict:
         self.connection.execute("INSERT INTO project_sequences(project_key) VALUES (?) ON CONFLICT DO NOTHING", (data["key"],))
@@ -93,7 +99,7 @@ class WorkspaceRepository:
             FROM labels l JOIN issue_labels il ON il.label_id = l.id WHERE il.issue_id = ? ORDER BY l.name""", (issue_id,))]
         return issue
 
-    def issues(self, filters: dict) -> list[dict]:
+    def issues(self, filters: dict, *, limit: int | None = None, after_id: int = 0) -> list[dict]:
         clauses, values = [], []
         if self.user_id is not None or self.workspace_id is not None:
             access, access_values = self.access_clause()
@@ -122,6 +128,9 @@ class WorkspaceRepository:
             clauses.append("search_text LIKE ? ESCAPE '\\'")
             literal = normalize(filters["q"].strip()).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             values.append(f"%{literal}%")
+        if limit is not None:
+            clauses.append("id > ?")
+            values.append(after_id)
         condition = " WHERE " + " AND ".join(clauses) if clauses else ""
         columns = {"createdAt": "created_at", "updatedAt": "updated_at", "title": "lower(title)",
                    "priority": "CASE priority WHEN 'none' THEN 0 WHEN 'low' THEN 1 WHEN 'medium' THEN 2 WHEN 'high' THEN 3 ELSE 4 END",
@@ -129,7 +138,13 @@ class WorkspaceRepository:
         ordering = columns[filters.get("sortBy", "createdAt")]
         direction = "ASC" if filters.get("direction") == "asc" else "DESC"
         nulls = "due_date IS NULL ASC, " if filters.get("sortBy") == "dueDate" else ""
-        ids = self.connection.execute("SELECT id FROM issues" + condition + f" ORDER BY {nulls}{ordering} {direction}, id {direction}", values).fetchall()
+        query = "SELECT id FROM issues" + condition
+        if limit is not None:
+            query += " ORDER BY id LIMIT ?"
+            values.append(limit)
+        else:
+            query += f" ORDER BY {nulls}{ordering} {direction}, id {direction}"
+        ids = self.connection.execute(query, values).fetchall()
         return [self.issue(row["id"]) for row in ids]
 
     def create_issue(self, data: dict) -> dict:
