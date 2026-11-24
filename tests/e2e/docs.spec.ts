@@ -1,0 +1,71 @@
+import { expect, test } from './fixtures';
+
+test('Docs conserve les pages, les liens et les propriétés entre les vues', async ({ app, page }) => {
+  await expect(app.page.getByRole('button', { name: 'Docs', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Docs', exact: true }).click();
+  const main = page.getByRole('main');
+  const sidebar = page.getByRole('complementary');
+  const dialog = () => page.getByRole('dialog');
+  const heading = (name: string) => main.getByRole('heading', { name, exact: true });
+  async function namePage(title: string) {
+    await dialog().getByLabel('Titre', { exact: true }).fill(title);
+    await dialog().getByRole('button', { name: 'Créer la page' }).click();
+    await expect(heading(title)).toBeVisible();
+  }
+  await main.getByRole('button', { name: 'Nouvelle page', exact: true }).click();
+  await namePage('Accueil de l’atelier');
+  await main.getByRole('button', { name: 'Sous-page' }).click();
+  await namePage('Matériel');
+  const childUrl = page.url();
+  const editor = main.getByRole('textbox', { name: 'Contenu de la page' });
+  await editor.fill('Le matériel nécessaire à l’atelier.');
+  await expect(main.getByRole('status')).toHaveText('Enregistré');
+  await main.getByRole('button', { name: 'Lien interne', exact: true }).click();
+  await dialog().getByRole('button', { name: 'Accueil de l’atelier', exact: true }).click();
+  await expect(editor.getByRole('link', { name: 'Accueil de l’atelier' })).toBeVisible();
+  await expect(main.getByRole('status')).toHaveText('Enregistré');
+  await main.getByRole('button', { name: 'Paramètres de la page' }).click();
+  await dialog().getByRole('combobox', { name: 'Page parente' }).selectOption('');
+  await dialog().getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  await expect(dialog()).toHaveCount(0);
+  expect(page.url()).toBe(childUrl);
+  await page.reload();
+  await expect(editor).toContainText('matériel nécessaire');
+  await editor.getByRole('link', { name: 'Accueil de l’atelier' }).click();
+  await expect(heading('Accueil de l’atelier')).toBeVisible();
+  await expect(main.getByRole('link', { name: 'Matériel', exact: true })).toBeVisible();
+
+  await sidebar.getByRole('button', { name: 'Nouvelle collection', exact: true }).click();
+  await dialog().getByLabel('Titre', { exact: true }).fill('Bibliothèque');
+  await dialog().getByRole('button', { name: 'Créer la collection' }).click();
+  await expect(heading('Bibliothèque')).toBeVisible();
+  await main.getByRole('button', { name: 'Propriété', exact: true }).click();
+  await dialog().getByLabel('Nom', { exact: true }).fill('État');
+  await dialog().getByRole('combobox', { name: 'Type', exact: true }).selectOption('select');
+  await dialog().getByLabel('Options séparées par des virgules').fill('Idée, Prêt');
+  await dialog().getByRole('button', { name: 'Ajouter la propriété' }).click();
+  await expect(main.getByRole('columnheader', { name: 'État', exact: true })).toBeVisible();
+  await main.getByRole('button', { name: 'Nouvelle page', exact: true }).click();
+  await namePage('Atelier photo');
+  await main.getByRole('combobox', { name: 'État', exact: true }).selectOption('Prêt');
+  await expect(main.getByRole('combobox', { name: 'État', exact: true })).toBeEnabled();
+  await main.getByRole('link', { name: 'Bibliothèque', exact: true }).click();
+  await expect(heading('Bibliothèque')).toBeVisible();
+  await main.getByRole('button', { name: 'Vue', exact: true }).click();
+  await dialog().getByLabel('Nom de la vue').fill('Idées');
+  await dialog().getByRole('button', { name: 'Ajouter un filtre' }).click();
+  await dialog().getByRole('combobox', { name: 'Est égal à', exact: true }).selectOption('Idée');
+  await dialog().getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  await expect(main.getByText('Aucune page ne correspond aux filtres.')).toBeVisible();
+  await main.getByRole('button', { name: 'Supprimer la vue', exact: true }).click();
+  await dialog().getByRole('button', { name: 'Supprimer la vue', exact: true }).click();
+  await expect(main.getByRole('link', { name: 'Atelier photo', exact: true })).toBeVisible();
+  await expect(main.getByRole('combobox', { name: 'État — Atelier photo' })).toHaveValue('Prêt');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await main.getByRole('button', { name: 'Ouvrir la navigation Docs' }).click();
+  await sidebar.getByRole('link', { name: 'Matériel', exact: true }).click();
+  await expect(heading('Matériel')).toBeVisible();
+  await expect(sidebar).not.toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { ArrowsOutSimple, ChatCircle, ClockCounterClockwise, Copy, DotsThree, Link, PencilSimple, Star, Trash } from '@phosphor-icons/react';
-import { api } from './api';
+import { api, request } from './api';
 import type { Activity, Comment, Issue, IssueInput, Label, Project, Settings } from './types';
 import { Dialog, ErrorMessage, message, StatusMark } from './ui';
 import { IssueFields } from './IssueFields';
@@ -16,6 +16,48 @@ const asInput = (issue: Issue): IssueInput => ({
   dueDate: issue.dueDate || null,
 });
 const date = (value: string) => new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+
+type Planning = {
+  assigneeName: string | null; estimate: number | null; archivedAt: string | null;
+  relations: Array<{ kind: 'parent'|'blocks'|'duplicate'|'related'; direction: 'outgoing'|'incoming'; ticketId: number; identifier: string; title: string }>;
+};
+const relationLabels = {
+  parent: { outgoing: 'Ticket parent', incoming: 'Sous-ticket' },
+  blocks: { outgoing: 'Bloque', incoming: 'Bloqué par' },
+  duplicate: { outgoing: 'Doublon de', incoming: 'Doublon rattaché' },
+  related: { outgoing: 'Ticket lié', incoming: 'Ticket lié' },
+};
+
+function IssuePlanning({ id }: { id: number }) {
+  const [open, setOpen] = useState(false);
+  const [data, setData] = useState<Planning>();
+  const [error, setError] = useState('');
+  useEffect(() => {
+    if (!open) return;
+    const controller = new AbortController();
+    setData(undefined);
+    setError('');
+    void request<Planning>(`/issues/${id}/planning`, { signal: controller.signal })
+      .then(value => { if (!controller.signal.aborted) setData(value); })
+      .catch(cause => { if (!controller.signal.aborted) setError(message(cause)); });
+    return () => controller.abort();
+  }, [id, open]);
+  return <details onToggle={event => setOpen(event.currentTarget.open)}>
+    <summary>Suivi et relations</summary>
+    {open && <div className="issue-planning-plan">
+      <ErrorMessage>{error}</ErrorMessage>
+      {!data && !error && <p role="status">Chargement du suivi…</p>}
+      {data && <>
+        <p>Responsable · {data.assigneeName || 'Aucun'}</p>
+        <p>Estimation · {data.estimate ?? 'Non renseignée'}</p>
+        {data.archivedAt && <p>Archivé le {date(data.archivedAt)}</p>}
+        {!!data.relations.length && <ul>{data.relations.map(relation => <li key={relation.kind + relation.direction + relation.ticketId}>
+          {relationLabels[relation.kind][relation.direction]} · {relation.identifier} · {relation.title}
+        </li>)}</ul>}
+      </>}
+    </div>}
+  </details>;
+}
 
 type IssueDetailProps = {
   id: number;
@@ -266,6 +308,7 @@ export function IssueDetail({ id, projects, labels, onClose, onSaved, onDeleted,
                 onLabelCreated={onLabelCreated}
                 onLabelBusy={setLabelBusy}
               />
+              <IssuePlanning key={id} id={id} />
             </fieldset>
             <footer className="dialog-footer save-bar detail-save-bar">
               <button type="button" className="icon-button danger-icon" aria-label="Supprimer le ticket" title="Supprimer le ticket" disabled={busy} onClick={() => void remove()}>

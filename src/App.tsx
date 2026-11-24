@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { BookmarkSimple, CheckCircle, EnvelopeSimple, Gear, Keyboard, MagnifyingGlass, Plus, Stack, Star, SquaresFour, Trash, Users } from '@phosphor-icons/react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { BookmarkSimple, CheckCircle, EnvelopeSimple, FileText, Gear, Keyboard, MagnifyingGlass, Plus, ShareNetwork, Stack, Star, SquaresFour, Trash, Users, X } from '@phosphor-icons/react';
 import { api } from './api';
 import { EMPTY_FILTERS, hasFilters, type DisplaySettings, type Filters, type Issue, type Project, type SavedView, type Status, type User } from './types';
 import { Dialog, ErrorMessage, message } from './ui';
@@ -15,9 +15,17 @@ import { AccountDialog } from './AuthGate';
 import { InvitationsDialog, ProjectMembersDialog } from './Sharing';
 import { WorkspaceMenu, type WorkspaceControls } from './Workspaces';
 import { WorkspaceMembersDialog } from './WorkspaceMembers';
+import { WorkspaceRecords } from './WorkspaceRecords';
+import { SharedTickets } from './SharedTickets';
+import './docs/docs.css';
+import { docHref } from './docs/api';
 
-type Modal = { kind: 'project'; project?: Project } | { kind: 'ticket'; status?: Status } | { kind: 'detail'; id: number } | { kind: 'view'; view?: SavedView } | { kind: 'deleteView'; view: SavedView } | { kind: 'members'; project: Project } | { kind: 'workspaceMembers' } | { kind: 'account' } | { kind: 'invitations' } | { kind: 'commands' } | { kind: 'help' } | null;
+const DocsWorkspace = lazy(() => import('./docs/DocsWorkspace').then(module => ({ default: module.DocsWorkspace })));
+
+type Modal = { kind: 'project'; project?: Project } | { kind: 'ticket'; status?: Status } | { kind: 'detail'; id: number } | { kind: 'view'; view?: SavedView } | { kind: 'deleteView'; view: SavedView } | { kind: 'members'; project: Project } | { kind: 'workspaceMembers' } | { kind: 'sharedTickets' } | { kind: 'account' } | { kind: 'invitations' } | { kind: 'commands' } | { kind: 'help' } | null;
 function linkedIntegrations() { return new URLSearchParams(location.search).get('settings') === 'integrations'; }
+function linkedDoc() { return new URLSearchParams(location.search).get('docs') || ''; }
+function linkedDocView() { return new URLSearchParams(location.search).get('docView') || undefined; }
 function linkedIssue(): Modal { const id = Number(new URLSearchParams(location.search).get('issue')); return Number.isSafeInteger(id) && id > 0 ? { kind: 'detail', id } : null; }
 
 export default function App({ user, onSessionEnd, onUserUpdated, workspaceControls }: { user: User; onSessionEnd: (notice?: string) => void; onUserUpdated: (user: User) => void; workspaceControls: WorkspaceControls }) {
@@ -27,9 +35,13 @@ export default function App({ user, onSessionEnd, onUserUpdated, workspaceContro
   const { settings, ready, save } = preferences;
   const { filters, display } = settings;
   const { projects, issues, labels, templates, views, error, loading, refresh, addLabel } = useWorkspace(filters, display, ready);
-  const [section, setSection] = useState<'issues'|'projects'|'settings'>(() => linkedIntegrations() ? 'settings' : 'issues');
+  const [section, setSection] = useState<'issues'|'projects'|'settings'|'docs'|'planning'>(() => linkedDoc() ? 'docs' : linkedIntegrations() ? 'settings' : 'issues');
+  const [selectedDoc, setSelectedDoc] = useState(() => linkedDoc() || 'home');
+  const [selectedDocView, setSelectedDocView] = useState(linkedDocView);
+  const [docsSidebar, setDocsSidebar] = useState<HTMLDivElement | null>(null);
+  const [docsDrawer, setDocsDrawer] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>(() => linkedIntegrations() ? 'integrations' : 'preferences');
-  const [modal, setModal] = useState<Modal>(linkedIssue);
+  const [modal, setModal] = useState<Modal>(() => linkedDoc() ? null : linkedIssue());
   const [pageMode, setPageMode] = useState(new URLSearchParams(location.search).get('mode') === 'page');
   const [selectedViewId, setSelectedViewId] = useState<number | null>(null);
   const [mutationError, setMutationError] = useState('');
@@ -46,7 +58,7 @@ export default function App({ user, onSessionEnd, onUserUpdated, workspaceContro
   const activeView = views.find(view => view.id === selectedViewId);
   const filtered = hasFilters(filters);
   const total = projects.reduce((sum, project) => sum + project.issueCount, 0);
-  const title = section === 'settings' ? 'Paramètres' : section === 'projects' ? 'Projets' : activeView?.name || (filters.favoritesOnly ? 'Favoris' : activeProject?.name || 'Tous les tickets');
+  const title = section === 'planning' ? 'Pilotage' : section === 'settings' ? 'Paramètres' : section === 'projects' ? 'Projets' : activeView?.name || (filters.favoritesOnly ? 'Favoris' : activeProject?.name || 'Tous les tickets');
   const persist = (patch: Parameters<typeof save>[0]) => { void save(patch).catch(() => undefined); };
   const setFilters = (next: Filters) => persist({ filters: next });
   const setDisplay = (next: DisplaySettings) => persist({ display: next });
@@ -60,8 +72,46 @@ export default function App({ user, onSessionEnd, onUserUpdated, workspaceContro
   function openIssue(id: number) { if (!moving.current.has(id)) { setModal({ kind: 'detail', id }); updateUrl(id); } }
   function navigate(next: typeof section) {
     if (next !== section && leaveSettings.current && !leaveSettings.current()) return false;
+    if (section === 'docs' && next !== 'docs') {
+      history.pushState(null, '', docHref());
+      setDocsDrawer(false);
+    }
     setSection(next); return true;
   }
+  function openDocs(id = 'home', viewId?: string) {
+    if ((section !== 'docs' || selectedDoc !== id) && leaveSettings.current && !leaveSettings.current()) return false;
+    if (linkedDoc() !== id || linkedDocView() !== viewId) history.pushState(null, '', docHref(id, viewId));
+    setSection('docs'); setSelectedDoc(id); setSelectedDocView(viewId); setDocsDrawer(false);
+    return true;
+  }
+  function openDocsMenu() {
+    setDocsDrawer(true);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('.docs-close-navigation')?.focus());
+  }
+  function closeDocsMenu() {
+    setDocsDrawer(false);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('.docs-mobile-menu')?.focus());
+  }
+  useEffect(() => {
+    const onPopState = () => {
+      const id = linkedDoc();
+      if (!id && section !== 'docs') return;
+      if (leaveSettings.current && !leaveSettings.current()) {
+        history.pushState(null, '', docHref(section === 'docs' ? selectedDoc : undefined, selectedDocView));
+        return;
+      }
+      setSection(id ? 'docs' : 'issues');
+      setSelectedDoc(id || 'home');
+      setSelectedDocView(id ? linkedDocView() : undefined);
+      setDocsDrawer(false);
+    };
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && docsDrawer && !document.querySelector('dialog[open]')) closeDocsMenu();
+    };
+    window.addEventListener('popstate', onPopState);
+    window.addEventListener('keydown', onEscape);
+    return () => { window.removeEventListener('popstate', onPopState); window.removeEventListener('keydown', onEscape); };
+  }, [docsDrawer, section, selectedDoc, selectedDocView]);
   function openTickets(id?: number, favoritesOnly = false) {
     if (!navigate('issues')) return; setSelectedViewId(null);
     setFilters({ ...EMPTY_FILTERS, projectId: id ? String(id) : '', favoritesOnly });
@@ -82,7 +132,7 @@ export default function App({ user, onSessionEnd, onUserUpdated, workspaceContro
   useEffect(() => {
     if (!ready || initialized.current) return;
     initialized.current = true;
-    if (settings.homeView === 'projects' && !linkedIssue() && !linkedIntegrations()) setSection('projects');
+    if (settings.homeView === 'projects' && !linkedIssue() && !linkedDoc() && !linkedIntegrations()) setSection('projects');
     if (settings.homeView === 'list' || settings.homeView === 'board') void save({ display: { ...settings.display, view: settings.homeView } }).catch(() => undefined);
   }, [ready, settings, save]);
   useEffect(() => { if (!notice) return; const timeout = setTimeout(() => setNotice(''), 4500); return () => clearTimeout(timeout); }, [notice]);
@@ -92,6 +142,7 @@ export default function App({ user, onSessionEnd, onUserUpdated, workspaceContro
       if (modal || document.querySelector('dialog[open], [role="menu"]')) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setModal({ kind: 'commands' }); return; }
       if (event.ctrlKey || event.metaKey || event.altKey || (target instanceof HTMLElement && (target.closest('input, textarea, select') || target.isContentEditable))) return;
+      if (section === 'docs' && event.key !== '?') return;
       if (event.key.toLowerCase() === 'c' && !loading && (projects.length || canCreateProject)) { event.preventDefault(); setModal(projects.length ? { kind: 'ticket' } : { kind: 'project' }); }
       if (event.key === '/') { event.preventDefault(); if (!navigate('issues')) return; requestAnimationFrame(() => searchRef.current?.focus()); }
       if (event.key === '?') { event.preventDefault(); setModal({ kind: 'help' }); }
@@ -118,38 +169,50 @@ export default function App({ user, onSessionEnd, onUserUpdated, workspaceContro
     ...(canCreateProject ? [{ id: 'new-project', label: 'Créer un projet', run: () => setModal({ kind: 'project' }) }] : []),
     { id: 'issues', label: 'Afficher tous les tickets', run: () => openTickets() },
     { id: 'favorites', label: 'Afficher les favoris', run: () => openTickets(undefined, true) },
+    { id: 'shared-tickets', label: 'Afficher les tickets partagés', run: () => setModal({ kind: 'sharedTickets' }) },
     { id: 'projects', label: 'Afficher les projets', run: () => { navigate('projects'); } },
+    ...(workspace.role !== 'guest' ? [{ id: 'docs', label: 'Ouvrir Docs', run: () => openDocs() },
+      { id: 'planning', label: 'Ouvrir le pilotage', run: () => { navigate('planning'); } }] : []),
     { id: 'settings', label: 'Ouvrir les paramètres', run: () => { navigate('settings'); } },
     ...views.map(view => ({ id: `view-${view.id}`, label: `Ouvrir la vue ${view.name}`, run: () => openView(view) })),
   ];
   if (!ready) return <main className="form-body"><h1>Circular</h1><p role="status">Chargement des préférences…</p><ErrorMessage>{preferences.error}</ErrorMessage>{preferences.error && <button className="button" onClick={() => void preferences.reload()}>Réessayer</button>}</main>;
-  return <div className="app-shell"><a className="skip-link" href="#workspace">Aller aux tickets et projets</a>
-    <aside className="sidebar"><WorkspaceMenu controls={workspaceControls} user={user} canLeave={canLeave} onSettings={() => { setSettingsTab('workspace'); setSection('settings'); }} onMembers={() => setModal({ kind: 'workspaceMembers' })} onProfile={() => { setSettingsTab('profile'); setSection('settings'); }} onLogout={() => void logout()} />
+  return <div className={'app-shell' + (section === 'docs' ? ' docs-active' : '')}><a className="skip-link" href="#workspace">{section === 'docs' ? 'Aller aux documents' : 'Aller aux tickets et projets'}</a>
+    <aside className={'sidebar' + (docsDrawer ? ' docs-drawer-open' : '')}>
+      {section === 'docs' && <button className="icon-button docs-close-navigation" aria-label="Fermer la navigation Docs" onClick={closeDocsMenu}><X size={20} /></button>}
+      <WorkspaceMenu controls={workspaceControls} user={user} canLeave={canLeave} onSettings={() => { if (navigate('settings')) setSettingsTab('workspace'); }} onMembers={() => setModal({ kind: 'workspaceMembers' })} onProfile={() => { setSettingsTab('profile'); setSection('settings'); }} onLogout={() => void logout()} />
       <div className="workspace-label">{workspace.role === 'guest' ? 'Accès invité' : 'Espace de travail'}</div>
       <nav aria-label="Navigation principale">
         <button className="nav-item" aria-label="Commandes" data-short-label="Commandes" onClick={() => setModal({ kind: 'commands' })}><MagnifyingGlass size={17} />Commandes<span className="nav-count">Ctrl K</span></button>
         <button className={`nav-item ${section === 'issues' && !filters.projectId && !filters.favoritesOnly && !activeView ? 'active' : ''}`} aria-label="Tous les tickets" data-short-label="Tickets" onClick={() => openTickets()}><Stack size={17} />Tous les tickets<span className="nav-count">{total}</span></button>
         <button className={`nav-item ${section === 'issues' && filters.favoritesOnly ? 'active' : ''}`} aria-label="Favoris" data-short-label="Favoris" onClick={() => openTickets(undefined, true)}><Star size={17} />Favoris</button>
-        <button className={`nav-item ${section === 'projects' ? 'active' : ''}`} aria-label="Projets" data-short-label="Projets" onClick={() => { navigate('projects'); }}><SquaresFour size={17} />Projets<span className="nav-count">{projects.length}</span></button>
+        <button className={`nav-item ${(section === 'projects' || section === 'planning') ? 'active' : ''}`} aria-label="Projets" data-short-label="Projets" onClick={() => { navigate('projects'); }}><SquaresFour size={17} />Projets<span className="nav-count">{projects.length}</span></button>
+        {workspace.role !== 'guest' && <button className={`nav-item ${section === 'docs' ? 'active' : ''}`}
+          aria-label="Docs" aria-current={section === 'docs' ? 'page' : undefined} data-short-label="Docs" onClick={() => openDocs()}><FileText size={17} />Docs</button>}
         <button className={`nav-item ${section === 'settings' ? 'active' : ''}`} aria-label="Paramètres" data-short-label="Réglages" onClick={() => { navigate('settings'); }}><Gear size={17} />Paramètres</button>
       </nav>
+      {section === 'docs' ? <div className="docs-navigation" ref={setDocsSidebar} /> : <>
       <div className="sidebar-section"><span>VUES ENREGISTRÉES</span><button className="icon-button" aria-label="Enregistrer une vue" title="Enregistrer les filtres et l’affichage" onClick={() => setModal({ kind: 'view' })}><Plus size={15} /></button></div>
       <div className="saved-views">{views.map(view => <div className="saved-view-row" key={view.id}><button className={`nav-item ${section === 'issues' && selectedViewId === view.id ? 'active' : ''}`} onClick={() => openView(view)}><BookmarkSimple size={15} /><span className="truncate">{view.name}</span></button><button className="icon-button" aria-label={`Supprimer la vue ${view.name}`} onClick={() => setModal({ kind: 'deleteView', view })}><Trash size={14} /></button></div>)}</div>
       <div className="sidebar-section"><span>PROJETS</span><button className="icon-button" aria-label="Nouveau projet" title="Nouveau projet" disabled={!canCreateProject} onClick={() => setModal({ kind: 'project' })}><Plus size={15} /></button></div>
       <div className="project-shortcuts">{projects.map(project => <button key={project.id} className={`nav-item ${section === 'issues' && filters.projectId === String(project.id) ? 'active' : ''}`} onClick={() => openTickets(project.id)}><span className="project-dot" style={{ background: project.color }} /><span className="truncate">{project.name}</span><span className="nav-count">{project.issueCount}</span></button>)}</div>
       <div className="sidebar-bottom"><span className={`connection-dot ${error ? 'offline' : ''}`} />{error ? 'Connexion à vérifier' : workspace.role === 'guest' ? 'Accès invité' : 'Espace de travail'}<button className="icon-button help-button" aria-label="Raccourcis clavier" title="Raccourcis clavier (?)" onClick={() => setModal({ kind: 'help' })}><Keyboard size={17} /></button><span className="sidebar-private">Projets de cet espace</span></div>
+      </>}
     </aside>
-    <main className="main-content"><header className="topbar"><span className="breadcrumb">{workspace.name}<span>/</span><strong>{title}</strong></span><span className="settings-save-state" role="status">{preferences.saving ? 'Enregistrement des réglages…' : preferences.error ? 'Réglages non enregistrés' : 'Réglages enregistrés'}</span><div className="account-controls"><button className="icon-button" aria-label="Invitations" title="Invitations" onClick={() => setModal({ kind: 'invitations' })}><EnvelopeSimple size={19} />{invitationCount > 0 && <span className="account-count">{invitationCount}</span>}</button><button className="account-button" aria-label="Mon compte" title={user.displayName || user.username} onClick={() => { if (!leaveSettings.current || leaveSettings.current()) setModal({ kind: 'account' }); }}><span className="account-avatar" aria-hidden="true">{(user.displayName || user.username)[0]?.toUpperCase()}</span><span>{user.displayName || user.username}</span></button><button className="icon-button help-account-button" aria-label="Raccourcis clavier" onClick={() => setModal({ kind: 'help' })}><Keyboard size={16} /></button></div></header>
-      <section className="page-heading"><div className="heading-content"><div className="heading-title"><h1 id="workspace" tabIndex={-1}>{title}</h1>{activeProject && section === 'issues' && <span className="project-key heading-key">{activeProject.key}</span>}</div>{section === 'projects' ? <p>{projects.length} projet{projects.length !== 1 ? 's' : ''} dans cet espace</p> : section === 'settings' ? <p>Votre espace, votre façon de travailler.</p> : activeProject?.description && <p>{activeProject.description}</p>}</div>{section !== 'settings' && <button className="button primary" disabled={(loading && section === 'issues') || (!canCreateProject && (section === 'projects' || !projects.length))} aria-label={section === 'projects' ? 'Nouveau projet' : 'Nouveau ticket'} onClick={() => section === 'projects' ? setModal({ kind: 'project' }) : newTicket()}><Plus size={16} /><span>{section === 'projects' ? 'Nouveau projet' : 'Nouveau ticket'}</span>{section === 'issues' && <kbd aria-hidden="true">C</kbd>}</button>}</section>
+    <main className="main-content">{section === 'docs' ? <Suspense fallback={<p className="loading-state" role="status">Chargement de Docs…</p>}><DocsWorkspace key={workspace.id} workspace={workspace} userId={user.id} selected={selectedDoc} selectedView={selectedDocView}
+      open={openDocs} sidebar={docsSidebar} navigationOpen={docsDrawer} toggleNavigation={openDocsMenu} registerGuard={registerNavigationGuard} /></Suspense> : <><header className="topbar"><span className="breadcrumb">{workspace.name}<span>/</span><strong>{title}</strong></span><span className="settings-save-state" role="status">{preferences.saving ? 'Enregistrement des réglages…' : preferences.error ? 'Réglages non enregistrés' : 'Réglages enregistrés'}</span><div className="account-controls"><button className="icon-button" aria-label="Invitations" title="Invitations" onClick={() => setModal({ kind: 'invitations' })}><EnvelopeSimple size={19} />{invitationCount > 0 && <span className="account-count">{invitationCount}</span>}</button><button className="account-button" aria-label="Mon compte" title={user.displayName || user.username} onClick={() => { if (!leaveSettings.current || leaveSettings.current()) setModal({ kind: 'account' }); }}><span className="account-avatar" aria-hidden="true">{(user.displayName || user.username)[0]?.toUpperCase()}</span><span>{user.displayName || user.username}</span></button><button className="icon-button help-account-button" aria-label="Raccourcis clavier" onClick={() => setModal({ kind: 'help' })}><Keyboard size={16} /></button></div></header>
+      <section className="page-heading"><div className="heading-content"><div className="heading-title"><h1 id="workspace" tabIndex={-1}>{title}</h1>{activeProject && section === 'issues' && <span className="project-key heading-key">{activeProject.key}</span>}</div>{section === 'projects' ? <p>{projects.length} projet{projects.length !== 1 ? 's' : ''} dans cet espace</p> : section === 'settings' ? <p>Votre espace, votre façon de travailler.</p> : activeProject?.description && <p>{activeProject.description}</p>}</div>{section === 'projects' && canCreateProject && <button className="button" onClick={() => navigate('planning')}>Pilotage</button>}{section === 'planning' && <button className="button" onClick={() => navigate('projects')}>Retour aux projets</button>}{section !== 'settings' && section !== 'planning' && <button className="button primary" disabled={(loading && section === 'issues') || (!canCreateProject && (section === 'projects' || !projects.length))} aria-label={section === 'projects' ? 'Nouveau projet' : 'Nouveau ticket'} onClick={() => section === 'projects' ? setModal({ kind: 'project' }) : newTicket()}><Plus size={16} /><span>{section === 'projects' ? 'Nouveau projet' : 'Nouveau ticket'}</span>{section === 'issues' && <kbd aria-hidden="true">C</kbd>}</button>}</section>
       {activeProject && section === 'issues' && <div className="project-context-actions"><button className="button subtle" onClick={() => setModal({ kind: 'members', project: activeProject })}><Users size={16} />Membres du projet</button></div>}
       {preferences.error && <div className="settings-error"><ErrorMessage>{preferences.error}</ErrorMessage><button className="button" onClick={() => void preferences.retry().catch(() => undefined)}>Réessayer l’enregistrement des réglages</button></div>}
-      {section === 'issues' && <><Toolbar filters={filters} setFilters={setFilters} projects={projects} labels={labels} display={display} onDisplayChange={setDisplay} view={display.view} setView={view => setDisplay({ ...display, view })} searchRef={searchRef} /><div className="view-actions"><span className="view-name">{activeView ? `Vue : ${activeView.name}` : 'Vue personnelle'}</span><button className="button subtle" onClick={() => setModal({ kind: 'view' })}>Enregistrer cette vue</button>{activeView && <button className="button subtle" onClick={() => setModal({ kind: 'view', view: activeView })}>Mettre à jour la vue</button>}</div></>}
+      {section === 'issues' && <><Toolbar filters={filters} setFilters={setFilters} projects={projects} labels={labels} display={display} onDisplayChange={setDisplay} view={display.view} setView={view => setDisplay({ ...display, view })} searchRef={searchRef} /><div className="view-actions"><span className="view-name">{activeView ? `Vue : ${activeView.name}` : 'Vue personnelle'}</span><button className="button subtle" onClick={() => setModal({ kind: 'view' })}>Enregistrer cette vue</button><button className="button subtle shared-resources-button" aria-label="Partagés avec moi" onClick={() => setModal({ kind: 'sharedTickets' })}><ShareNetwork size={17} /><span>Partagés avec moi</span></button>{activeView && <button className="button subtle" onClick={() => setModal({ kind: 'view', view: activeView })}>Mettre à jour la vue</button>}</div></>}
       <ErrorMessage>{error || mutationError}</ErrorMessage>{error && <button className="button retry-button" onClick={() => void refresh()}>Réessayer</button>}
       {section === 'issues' && <div className="result-summary"><span>{loading ? 'Chargement…' : `${issues.length} ticket${issues.length !== 1 ? 's' : ''}${filtered ? ' dans cette vue' : ''}`}</span><span>{display.view === 'board' ? 'Glissez les tickets pour changer leur statut' : 'Affichage personnalisable'}</span></div>}
-      {section === 'settings' ? <SettingsView settings={settings} labels={labels} templates={templates} projects={projects} onSaveSettings={save} onChanged={syncWorkspace} onNavigationGuardChange={registerNavigationGuard} initialTab={settingsTab} onTabChange={setSettingsTab} workspace={workspace} user={user} onWorkspaceUpdated={workspaceControls.updateWorkspace} onUserUpdated={onUserUpdated} /> : loading ? <div className="loading-state" role="status">Chargement de votre espace…</div> : section === 'projects' ? <ProjectGrid projects={projects} onOpen={openTickets} onEdit={project => setModal({ kind: 'project', project })} onMembers={project => setModal({ kind: 'members', project })} /> : display.view === 'board' && (issues.length > 0 || projects.length > 0) ? <IssueBoard issues={issues} projects={projects} pendingIds={pendingIds} display={display} onDisplayChange={setDisplay} onFavorite={issue => void mutateIssue(issue.id, { isFavorite: !issue.isFavorite })} onOpen={openIssue} onMove={(id, status) => void mutateIssue(id, { status })} onCreate={newTicket} /> : <IssueList issues={issues} projects={projects} pendingIds={pendingIds} display={display} onDisplayChange={setDisplay} onFavorite={issue => void mutateIssue(issue.id, { isFavorite: !issue.isFavorite })} onOpen={openIssue} />}
-      {!loading && !error && section !== 'settings' && (section === 'projects' ? !projects.length : !issues.length && (display.view === 'list' || !projects.length)) && <div className="empty-state"><span className="empty-icon"><Stack size={28} /></span><h2>{filtered && projects.length ? 'Aucun ticket ne correspond.' : projects.length ? 'Aucun ticket pour le moment.' : canCreateProject ? 'Créez votre premier projet.' : 'Aucun projet partagé.'}</h2><p>{filtered && projects.length ? 'Essayez une autre recherche ou élargissez vos filtres.' : projects.length ? 'Ajoutez un ticket à un projet pour commencer.' : canCreateProject ? 'Vous pourrez ensuite y organiser vos tickets.' : 'Les projets auxquels vous êtes invité apparaîtront ici.'}</p>{filtered && projects.length ? <button className="button" onClick={() => setFilters(EMPTY_FILTERS)}>Afficher tous les tickets</button> : <button className="button" disabled={!canCreateProject && (section === 'projects' || !projects.length)} onClick={() => projects.length && section === 'issues' ? newTicket() : setModal({ kind: 'project' })}><Plus size={16} />{projects.length && section === 'issues' ? 'Créer un ticket' : 'Créer un projet'}</button>}</div>}
+      {section === 'settings' ? <SettingsView settings={settings} labels={labels} templates={templates} projects={projects} onSaveSettings={save} onChanged={syncWorkspace} onNavigationGuardChange={registerNavigationGuard} initialTab={settingsTab} onTabChange={setSettingsTab} workspace={workspace} user={user} onWorkspaceUpdated={workspaceControls.updateWorkspace} onUserUpdated={onUserUpdated} /> : section === 'planning' ? <WorkspaceRecords key={workspace.id} workspaceId={workspace.id} projects={projects} userId={user.id} owner={workspace.role === 'owner'} /> : loading ? <div className="loading-state" role="status">Chargement de votre espace…</div> : section === 'projects' ? <ProjectGrid projects={projects} onOpen={openTickets} onEdit={project => setModal({ kind: 'project', project })} onMembers={project => setModal({ kind: 'members', project })} /> : display.view === 'board' && (issues.length > 0 || projects.length > 0) ? <IssueBoard issues={issues} projects={projects} pendingIds={pendingIds} display={display} onDisplayChange={setDisplay} onFavorite={issue => void mutateIssue(issue.id, { isFavorite: !issue.isFavorite })} onOpen={openIssue} onMove={(id, status) => void mutateIssue(id, { status })} onCreate={newTicket} /> : <IssueList issues={issues} projects={projects} pendingIds={pendingIds} display={display} onDisplayChange={setDisplay} onFavorite={issue => void mutateIssue(issue.id, { isFavorite: !issue.isFavorite })} onOpen={openIssue} />}
+      {!loading && !error && (section === 'issues' || section === 'projects') && (section === 'projects' ? !projects.length : !issues.length && (display.view === 'list' || !projects.length)) && <div className="empty-state"><span className="empty-icon"><Stack size={28} /></span><h2>{filtered && projects.length ? 'Aucun ticket ne correspond.' : projects.length ? 'Aucun ticket pour le moment.' : canCreateProject ? 'Créez votre premier projet.' : 'Aucun projet partagé.'}</h2><p>{filtered && projects.length ? 'Essayez une autre recherche ou élargissez vos filtres.' : projects.length ? 'Ajoutez un ticket à un projet pour commencer.' : canCreateProject ? 'Vous pourrez ensuite y organiser vos tickets.' : 'Les projets auxquels vous êtes invité apparaîtront ici.'}</p>{filtered && projects.length ? <button className="button" onClick={() => setFilters(EMPTY_FILTERS)}>Afficher tous les tickets</button> : <button className="button" disabled={!canCreateProject && (section === 'projects' || !projects.length)} onClick={() => projects.length && section === 'issues' ? newTicket() : setModal({ kind: 'project' })}><Plus size={16} />{projects.length && section === 'issues' ? 'Créer un ticket' : 'Créer un projet'}</button>}</div>}
+    </>}
     </main>
     {!!notice && <div className="toast" role="status"><CheckCircle size={15} />{notice}</div>}
+    {modal?.kind === 'sharedTickets' && <SharedTickets workspaceId={workspace.id} close={close} />}
     {modal?.kind === 'account' && <AccountDialog user={user} onClose={close} onSessionEnd={onSessionEnd} />}
     {modal?.kind === 'invitations' && <InvitationsDialog onClose={close} onChanged={async id => { await workspaceControls.refreshWorkspaces(id); if (!id || id === workspace.id) { await refresh(); await refreshInvitations(); } }} />}
     {modal?.kind === 'workspaceMembers' && <WorkspaceMembersDialog workspace={workspace} user={user} onClose={close} onLeft={async () => { await workspaceControls.refreshWorkspaces(); close(); }} />}

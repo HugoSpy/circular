@@ -69,13 +69,54 @@
 
 .mcp-consent h2 { font-size: 16px; }
 .mcp-consent select { width: 100%; min-height: 42px; }
+.mcp-consent-v3 { width: min(100%, 700px); }
+.mcp-families { display: grid; gap: 12px; margin-top: 16px; }
+.mcp-consent .mcp-families fieldset { gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; }
+.mcp-consent .mcp-families .field-hint { margin: 0; }
+.mcp-consent .mcp-families .mcp-actions { justify-content: flex-start; }
+.mcp-consent .mcp-scope { flex-direction: row; align-items: center; min-height: 36px; }
+.mcp-consent .mcp-scope input { width: 16px; min-height: 16px; margin: 0; accent-color: var(--accent); }
 .mcp-consent ul { padding-left: 20px; }
 .mcp-consent a { color: var(--accent); }
+.mcp-permissions { margin: 20px 0; }
+.mcp-permissions h2 { margin: 0 0 4px; }
+.mcp-permissions ul { margin: 0; }
+.mcp-permissions li + li { margin-top: 4px; }
+.mcp-write-permissions { margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-raised); }
 .mcp-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .mcp-consent .mcp-actions { justify-content: flex-end; }
+@media (max-width: 450px) {
+  .mcp-consent .mcp-actions > .button { width: 100%; justify-content: center; white-space: normal; }
+}
 .mcp-connections { margin-bottom: 16px; }
 .mcp-connections h4 { margin: 14px 0 6px; }
 .mcp-connections .mcp-actions { align-items: center; margin-top: 6px; }
 .mcp-connections input { flex: 1 1 235px; min-width: 0; }
 .mcp-connection { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); }
 .mcp-connection p { margin: 0; }
+
+.planning-workspace { display: grid; gap: 16px; padding: 0 var(--gutter) 28px; justify-items: start; }
+.planning-workspace > * { min-width: 0; max-width: 100%; }
+.planning-search, .planning-list { width: 100%; }
+.planning-search input { flex: 1 1 185px; min-width: 0; }
+.planning-entry { display: flex; align-items: start; justify-content: space-between; gap: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; background: var(--panel); }
+.planning-entry > div { min-width: 0; }
+.planning-entry h2 { margin: 0; font-size: 16px; }
+.planning-entry p { margin: 6px 0; }
+.planning-body { white-space: pre-wrap; }
+.planning-entry details { color: var(--muted); }
+.planning-entry dd { margin-inline-start: 0; overflow-wrap: anywhere; }
+.planning-dates > label { flex: 1 1 155px; }
+.planning-patch { max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+.planning-patch pre { overflow: auto; max-height: 280px; background: var(--bg); padding: 12px; }
+.planning-option, .form-body label.planning-option { display: flex; flex-direction: row; align-items: center; gap: 8px; }
+.planning-option input { width: 16px; min-height: 16px; margin: 0; accent-color: var(--accent); }
+@media (max-width: 450px) {
+  .planning-workspace .button { white-space: normal; }
+  .planning-entry { flex-wrap: wrap; }
+}
+.mcp-action-detail { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 767px) {
+  .shared-resources-button span { display: none; }
+  .shared-resources-button { min-width: 44px; }
+}

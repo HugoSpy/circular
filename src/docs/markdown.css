@@ -1,0 +1,79 @@
+.markdown-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .55rem;
+  border-bottom: 1px solid var(--line); padding-bottom: .75rem; margin-bottom: .75rem;
+}
+.markdown-source, .markdown-visual .tiptap {
+  min-height: 230px; padding: .85rem; overflow-wrap: anywhere; font-weight: 400;
+}
+.markdown-source, .markdown-visual pre { font: .86rem/1.65 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.markdown-visual .tiptap p { margin: .4rem 0; }
+.markdown-visual .tiptap pre {
+  padding: .75rem; background: var(--panel); border-radius: 7px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.markdown-visual .tiptap ul[data-type=taskList] { list-style: none; padding-inline-start: 1rem; }
+.markdown-visual .tiptap li[data-type=taskItem] { display: flex; align-items: baseline; gap: .45rem; }
+.markdown-visual .tiptap input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent); }
+.markdown-visual .tiptap blockquote, .markdown-notice { border-inline-start: 3px solid var(--accent); padding-inline-start: .8rem; }
+@media (max-width: 660px) {
+  .markdown-toolbar button { padding-inline: .55rem; }
+}
+
+.docs-block-menu {
+  position: fixed;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  width: min(315px, calc(100vw - 24px));
+  border: 1px solid var(--control-line);
+  border-radius: 9px;
+  background: var(--panel);
+  box-shadow: 0 12px 36px #0009;
+  overflow: hidden;
+}
+.docs-block-menu-heading, .docs-block-menu-help, .docs-block-empty {
+  margin: 0;
+  padding: 8px 11px;
+  color: var(--muted);
+  font-size: .83rem;
+}
+.docs-block-menu-heading { border-bottom: 1px solid var(--line); font-weight: 600; }
+.docs-block-menu-help { border-top: 1px solid var(--line); font-size: .74rem; }
+.docs-block-options { min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 5px; }
+.docs-block-options [role=option] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.docs-block-options [aria-selected=true], .docs-block-options [role=option]:hover {
+  color: var(--accent);
+  border-color: #4b4229;
+  background: var(--accent-soft);
+}
+.docs-block-icon { width: 26px; flex: none; text-align: center; font-size: .86rem; }
+@media (max-width: 730px) {
+  .docs-block-menu-help { display: none; }
+  .docs-block-options [role=option] { min-height: 42px; }
+}
+
+.markdown-visual .tiptap table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+.markdown-visual .tiptap th, .markdown-visual .tiptap td { border: 1px solid var(--line); padding: 6px 9px; vertical-align: top; overflow-wrap: anywhere; }
+.markdown-visual .tiptap th { background: var(--panel); text-align: start; }
+.markdown-visual .tiptap table p, .markdown-visual .tiptap .docs-callout p { margin: 4px 0; }
+.docs-callout { background: var(--accent-soft); border-inline-start: 3px solid var(--accent); border-radius: 6px; margin: 12px 0; padding: 9px 12px; }
+.docs-callout summary { cursor: pointer; }
+.docs-callout input { display: inline-block; max-width: 85%; margin-block: 2px; }
+.docs-callout .visually-hidden { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+.docs-asset { display: inline-flex; flex-direction: column; vertical-align: middle; max-width: 100%; overflow-wrap: anywhere; }
+.docs-asset img { display: block; width: auto; height: auto; max-width: min(100%, 420px); max-height: 340px; object-fit: contain; }
+
+.docs-embedded-view { min-width: 0; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow: hidden; }
+.docs-embedded-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.markdown-visual .docs-embedded-heading h2 { font-size: 1.05rem; margin: 0; overflow-wrap: anywhere; }
+.docs-embedded-heading small { color: var(--muted); }
+.docs-embedded-body { padding: 10px 14px; }
+.markdown-visual .docs-embedded-body .docs-collection-list { padding: 0; }
+.markdown-visual .docs-embedded-body .docs-board-lane h2 { font-size: .91rem; margin: 0 0 8px; }

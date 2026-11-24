@@ -5,8 +5,11 @@ import App from './App';
 import { AuthGate } from './AuthGate';
 import { WorkspaceGate } from './Workspaces';
 import { McpConsent } from './McpConnect';
+import { McpConfirmation } from './McpConfirmation';
 
-const mcpRequest = new URLSearchParams(location.hash.slice(1)).get('mcp');
+const fragment = new URLSearchParams(location.hash.slice(1));
+const mcpRequest = fragment.get('mcp');
+const mcpAction = fragment.get('mcp-action');
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -17,6 +20,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean
   }
 }
 
-createRoot(document.getElementById('root')!).render(<React.StrictMode><ErrorBoundary><AuthGate mcpLogin={Boolean(mcpRequest)}>{(user, endSession, updateUser) => mcpRequest
+createRoot(document.getElementById('root')!).render(<React.StrictMode><ErrorBoundary><AuthGate mcpLogin={Boolean(mcpRequest || mcpAction)}>{(user, endSession, updateUser) => mcpRequest
   ? <McpConsent key={user.id} requestId={mcpRequest} user={user} />
+  : mcpAction ? <McpConfirmation key={user.id} actionId={mcpAction} />
   : <WorkspaceGate key={user.id} user={user} onUserUpdated={updateUser} onSessionEnd={endSession}>{controls => <App key={`${user.id}:${controls.workspace.id}`} user={user} onSessionEnd={endSession} onUserUpdated={updateUser} workspaceControls={controls} />}</WorkspaceGate>}</AuthGate></ErrorBoundary></React.StrictMode>);

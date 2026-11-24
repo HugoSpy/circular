@@ -18,6 +18,9 @@ TABLES = (
     "template_labels", "issue_activity", "project_members", "project_invitations",
     "issue_favorites", "user_settings", "workspace_invitations", "workspace_invite_links",
     "workspace_user_settings", "seed_runs",
+    "docs_collections", "docs_fields", "docs_views", "docs_pages", "docs_links",
+    "docs_revisions", "docs_trash", "docs_trashed_pages",
+    "docs_templates", "docs_assets", "docs_asset_links", "docs_comments", "docs_mentions", "docs_page_relations",
 )
 IDENTITY_TABLES = (
     "users", "projects", "labels", "issues", "comments", "saved_views",
@@ -75,6 +78,11 @@ def import_sqlite(source: Path, destination: Database) -> dict[str, int]:
                 if table == "users" and "display_name" not in source_columns:
                     connection.execute("UPDATE users SET display_name = username, profile_completed = 1")
                 counts[table] = count
+            if "docs_pages" in available and "docs_revisions" not in available:
+                connection.execute("""
+                    INSERT INTO docs_revisions (workspace_id, page_id, revision, title, markdown)
+                    SELECT workspace_id, id, revision, title, markdown FROM docs_pages
+                """)
             for table in IDENTITY_TABLES:
                 # IDs remain stable, and future inserts continue above imported
                 # IDs rather than colliding with identity sequences starting at 1.
