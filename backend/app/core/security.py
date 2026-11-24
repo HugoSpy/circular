@@ -5,6 +5,9 @@ from starlette.responses import JSONResponse, Response
 from urllib.parse import urlsplit
 from backend.app.core.config import production, public_url
 
+from backend.app.services.docs_assets import FILE_LIMIT
+
+ASSET_UPLOAD = re.compile(r"/api/workspaces/[0-9]+/docs/pages/[0-9a-f-]{36}/attachments", re.IGNORECASE)
 BODY_LIMIT = 131072
 HOST_PATTERN = re.compile(r"^(localhost|127\.0\.0\.1)(?::([0-9]{1,5}))?$", re.IGNORECASE)
 CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
@@ -56,13 +59,17 @@ class LocalSecurityMiddleware:
         if scope["method"] == "OPTIONS":
             return await Response(status_code=204, headers={"Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, X-CSRF-Token, X-Workspace-Id"})(scope, receive, secure_send)
         if scope["method"] in {"POST", "PATCH", "PUT"}:
+            upload = scope["method"] == "POST" and ASSET_UPLOAD.fullmatch(scope["path"])
             oauth_form = self.public_url and scope["method"] == "POST" and scope["path"] in {"/token", "/revoke"}
-            content_type = "application/x-www-form-urlencoded" if oauth_form else "application/json"
+            content_type = "application/octet-stream" if upload else "application/x-www-form-urlencoded" if oauth_form else "application/json"
             if headers.get("content-type", "").split(";")[0].strip().lower() != content_type:
-                return await reject(415, f"Le contenu doit être au format {content_type}.")
+                return await reject(415, "Le fichier doit être envoyé au format binaire." if upload
+                                    else f"Le contenu doit être au format {content_type}.")
+            limit = FILE_LIMIT if upload else BODY_LIMIT
+            too_large = "Ce fichier dépasse la limite de 10 Mio." if upload else "La requête dépasse la limite de 128 Ko."
             try:
-                if int(headers.get("content-length", "0")) > BODY_LIMIT:
-                    return await reject(413, "La requête dépasse la limite de 128 Ko.")
+                if int(headers.get("content-length", "0")) > limit:
+                    return await reject(413, too_large)
             except ValueError:
                 return await reject(400, "Taille de requête invalide.")
             body = bytearray()
@@ -71,8 +78,8 @@ class LocalSecurityMiddleware:
                 if message["type"] == "http.disconnect":
                     return
                 body.extend(message.get("body", b""))
-                if len(body) > BODY_LIMIT:
-                    return await reject(413, "La requête dépasse la limite de 128 Ko.")
+                if len(body) > limit:
+                    return await reject(413, too_large)
                 if not message.get("more_body", False):
                     break
             delivered = False

@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Circular — Maquette MCP V3</title>
+  <link rel="stylesheet" href="../../src/styles.css">
+  <link rel="stylesheet" href="../../src/account-features.css">
+  <style>
+    .preview { width: min(calc(100% - 32px), 1200px); margin: 24px auto 48px; }
+    .preview h1, .preview h2, .preview h3, .preview p { margin: 0; }
+    .preview h1 { font-size: clamp(24px, 4vw, 32px); line-height: 1.17; letter-spacing: -.55px; }
+    .preview h2 { font-size: 17px; }
+    .preview h3 { font-size: 14px; }
+    .preview [hidden] { display: none; }
+    .demo-bar, .panel, .preview-nav { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+    .demo-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 16px; margin-bottom: 12px; }
+    .demo-bar .auth-brand { font-size: 17px; margin: 0; }
+    .demo-bar .brand-mark { width: 22px; height: 22px; }
+    .demo-control { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .demo-control select { width: auto; max-width: 100%; }
+    .shell { display: grid; grid-template-columns: 212px minmax(0, 1fr); gap: 12px; align-items: start; }
+    .preview-nav { display: grid; gap: 4px; padding: 10px; }
+    .preview-nav button { justify-content: flex-start; min-width: 0; border-color: transparent; background: transparent; text-align: left; }
+    .preview-nav button:hover { background: var(--panel-hover); }
+    .preview button[aria-current="page"], .preview button[aria-pressed="true"] { color: var(--accent); border-color: #5b5135; background: var(--accent-soft); }
+    .panel { min-width: 0; padding: clamp(16px, 3vw, 26px); }
+    .stack { display: grid; gap: 18px; }
+    .tight { display: grid; gap: 7px; }
+    .muted, .location { color: var(--muted); }
+    .location { font-size: 13px; }
+    .actions, .switcher, .preview-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .preview-toolbar > input { flex: 1 1 200px; }
+    .search-results { display: grid; gap: 6px; padding: 0; margin: 0; list-style: none; }
+    .search-results button { justify-content: flex-start; width: 100%; text-align: left; }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; background: var(--line); }
+    .fields div { min-width: 0; padding: 10px 12px; background: var(--panel); }
+    .fields dt { color: var(--muted); font-size: 12px; }
+    .fields dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+    .notice { padding: 10px 12px; border: 1px solid #665839; border-radius: 6px; color: var(--accent); background: var(--accent-soft); }
+    .notice:empty { display: none; }
+    .notice[data-error="true"] { color: var(--danger); border-color: #76484c; background: #352224; }
+    .connections { display: grid; }
+    .connection { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; border-top: 1px solid var(--line); padding: 13px 0; }
+    .connection details { margin-top: 6px; color: var(--muted); }
+    .connection summary { width: fit-content; cursor: pointer; }
+    .connection ul { margin: 5px 0 0; padding-inline-start: 20px; }
+    .permission-group { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; }
+    .permit-options { display: flex; flex-wrap: wrap; gap: 7px 16px; }
+    .permit-options label, .confirm-option { display: flex; align-items: center; gap: 8px; min-height: 35px; }
+    .preview input[type="checkbox"] { width: 16px; height: 16px; flex: none; margin: 0; accent-color: var(--accent); }
+    .preview .dialog .dialog-footer { justify-content: flex-end; }
+    .preview .dialog .form-body { padding-block: 16px; }
+    .preview .dialog textarea { min-height: 110px; resize: vertical; }
+    .preview .dialog label.confirm-option { display: flex; flex-direction: row; align-items: center; color: var(--text); }
+    @media (max-width: 760px) {
+      .shell { grid-template-columns: minmax(0, 1fr); }
+      .preview-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 450px) {
+      .preview { width: calc(100% - 24px); margin-top: 12px; }
+      .preview .button { min-height: 44px; white-space: normal; text-align: center; }
+      .connection, .fields { grid-template-columns: minmax(0, 1fr); }
+      .connection > .button { justify-self: start; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Périmètre validé le 24 novembre 2026 dans la conversation.
+       Une V3 en six lots : tickets et triage ; projets et feuille de route ;
+       Docs, fichiers et collaboration ; clients et demandes ; releases et revues ;
+       contexte des assistants. Un accord explicite par famille protège les nouveaux
+       accès. Les accords MVP et V2 gardent les capacités initialement consenties.
+       Les données et effets de cette maquette sont simulés. -->
+  <main class="preview">
+    <header class="demo-bar">
+      <div class="auth-brand"><span class="brand-mark" aria-hidden="true"></span>Circular</div>
+      <div class="demo-control">
+        <label for="scenario">Scénario de la maquette</label>
+        <select id="scenario">
+          <option value="normal">Parcours normal</option>
+          <option value="forbidden">Droits retirés</option>
+          <option value="conflict">Modification concurrente</option>
+          <option value="expired">Demande expirée</option>
+        </select>
+      </div>
+    </header>
+
+    <div class="shell">
+      <nav class="preview-nav" id="navigation" aria-label="Écrans de la maquette"></nav>
+      <section class="panel stack" id="screen" aria-labelledby="screen-title"></section>
+    </div>
+
+    <dialog class="dialog" id="dialog" aria-labelledby="dialog-title" aria-describedby="dialog-summary">
+      <form id="action-form">
+        <header class="dialog-header"><h2 id="dialog-title"></h2></header>
+        <div class="form-body">
+          <p id="dialog-summary" class="form-intro"></p>
+          <div id="dialog-fields" class="tight"></div>
+          <p id="dialog-error" class="notice" data-error="true" role="alert"></p>
+        </div>
+        <footer class="dialog-footer">
+          <button class="button" id="cancel" type="button" autofocus>Annuler</button>
+          <button class="button primary" id="execute" type="submit">Enregistrer</button>
+        </footer>
+      </form>
+    </dialog>
+  </main>
+
+  <script>
+    const families = [
+      ['tickets', 'Tickets et triage', 'Retrouver un ticket, lire les commentaires et l’historique.', 'Modifier les tickets, leurs champs et leurs relations.'],
+      ['projects', 'Projets et feuille de route', 'Consulter les projets, les membres, les vues et la planification.', 'Créer et mettre à jour des projets, initiatives, jalons, cycles et bilans.'],
+      ['docs', 'Documents et collaboration', 'Chercher et lire les documents, discussions, fichiers et notifications accessibles.', 'Modifier les documents, publier des commentaires et gérer les fichiers.'],
+      ['customers', 'Clients et demandes', 'Consulter les clients et demandes auxquels vous avez accès.', 'Créer et modifier des fiches et rattacher des demandes.'],
+      ['releases', 'Releases et revues', 'Lire les releases et les revues des dépôts accessibles.', 'Mettre à jour les releases, commenter et soumettre des revues.'],
+      ['agents', 'Contexte des assistants', 'Lire les consignes et les notes partagées.', 'Enregistrer un apprentissage ou signaler un blocage.'],
+    ];
+    const data = {
+      tickets: {
+        title: 'Tickets et triage', search: 'Rechercher un ticket par titre, identifiant ou URL',
+        records: [
+          { tab: 'Tickets', title: 'MOB-42 · Corriger la reprise de session', fields: [['Projet', 'Application mobile'], ['Statut', 'À trier'], ['Priorité', 'Haute'], ['Responsable', 'Camille Martin'], ['Échéance', '4 décembre 2026'], ['Étiquettes', 'Authentification']],
+            text: 'La session se ferme au retour de veille. La reproduction est confirmée sur iOS.',
+            actions: [
+              { name: 'Mettre à jour le ticket', fields: [
+                { field: 'Statut', options: ['À trier', 'À faire', 'En cours', 'En revue', 'Terminé'] },
+                { field: 'Priorité', options: ['Aucune', 'Basse', 'Moyenne', 'Haute', 'Urgente'] },
+                { field: 'Responsable', options: ['Camille Martin', 'Alex Nguyen', 'Sans responsable'] },
+                { field: 'Étiquettes', options: ['Authentification', 'Régression', 'Aucune'] },
+              ] },
+              { name: 'Déplacer le ticket', field: 'Projet', options: ['Application mobile', 'Infrastructure'] },
+              { name: 'Créer depuis un modèle', field: 'Modèle', options: ['Anomalie', 'Demande de fonctionnalité'] },
+              { name: 'Dupliquer le ticket' },
+              { name: 'Partager le ticket', field: 'Membre', options: ['Alex Nguyen'], sensitive: 'Alex Nguyen pourra voir le ticket et sa discussion.' },
+              { name: 'Retirer un accès', field: 'Membre', options: ['Alex Nguyen'], sensitive: 'Alex Nguyen perdra son accès individuel au ticket.' },
+              { name: 'Archiver le ticket', sensitive: 'Le ticket sera retiré des listes actives et restera consultable dans les archives.' },
+            ] },
+          { tab: 'Relations', title: 'Relations de MOB-42', fields: [['Bloqué par', 'INF-18 · Renouveler le jeton'], ['Sous-ticket', 'MOB-43 · Ajouter un test iOS'], ['Doublon', 'Aucun'], ['Estimation', '3 points']],
+            actions: [{ name: 'Ajouter une dépendance', field: 'Identifiant du ticket', example: 'INF-19' }, { name: 'Créer un sous-ticket', field: 'Titre', example: 'Vérifier les sessions sur Android' }, { name: 'Marquer comme doublon', field: 'Ticket de référence', example: 'MOB-41' }] },
+          { tab: 'Discussion et historique', title: 'Discussion et historique de MOB-42', entries: ['Camille Martin · Ticket créé', 'Alex Nguyen · Reproduction confirmée sur iOS', 'Camille Martin · Priorité passée à Haute'],
+            actions: [{ name: 'Ajouter un commentaire', field: 'Commentaire', long: true }, { name: 'Modifier mon commentaire', field: 'Commentaire', long: true }, { name: 'Supprimer mon commentaire', sensitive: 'Le commentaire de Camille Martin sera supprimé de la discussion.' }] },
+        ],
+      },
+      projects: {
+        title: 'Projets et feuille de route',
+        records: [
+          { tab: 'Projets', title: 'Application mobile', fields: [['Statut', 'En cours'], ['Membres', 'Camille Martin et Alex Nguyen'], ['Vue enregistrée', 'Tickets de la semaine'], ['Étiquettes', 'Mobile']],
+            actions: [{ name: 'Créer un projet', field: 'Nom du projet', example: 'Application tablette' }, { name: 'Mettre à jour le projet', field: 'Statut', options: ['Planifié', 'En cours', 'Terminé'] }, { name: 'Gérer les étiquettes', field: 'Étiquette', example: 'Mobile' }] },
+          { tab: 'Initiatives et jalons', title: 'Fiabiliser la connexion', fields: [['Initiative', 'Fiabiliser la connexion'], ['Projet', 'Application mobile'], ['Jalon', 'Reprise de session validée'], ['Échéance du jalon', '4 décembre 2026']],
+            actions: [{ name: 'Créer une initiative', field: 'Nom', example: 'Navigation hors ligne' }, { name: 'Ajouter un jalon', field: 'Nom du jalon', example: 'Tests de bout en bout' }, { name: 'Associer un projet', field: 'Projet', options: ['Application mobile', 'Infrastructure'] }] },
+          { tab: 'Cycles et triage', title: 'Cycle du 23 novembre', fields: [['Équipe', 'Équipe Mobile'], ['Du', '23 novembre 2026'], ['Au', '4 décembre 2026'], ['Permanence de triage', 'Alex Nguyen']],
+            actions: [{ name: 'Planifier un cycle', field: 'Nom du cycle', example: 'Cycle du 7 décembre' }, { name: 'Modifier la permanence', field: 'Responsable', options: ['Camille Martin', 'Alex Nguyen'] }] },
+          { tab: 'Bilans', title: 'Point d’avancement du 24 novembre', fields: [['Projet', 'Application mobile'], ['Santé', 'À surveiller'], ['Auteur', 'Camille Martin']],
+            text: 'La reproduction est stable. Le correctif de reprise de session est prévu dans le cycle.',
+            actions: [{ name: 'Publier un bilan', field: 'Compte rendu', long: true }, { name: 'Modifier le bilan', field: 'Compte rendu', long: true }, { name: 'Archiver le bilan', sensitive: 'Ce bilan sera retiré du fil d’avancement.' }] },
+        ],
+      },
+      docs: {
+        title: 'Documents et collaboration', search: 'Rechercher dans les tickets, projets et documents',
+        records: [
+          { tab: 'Documents', title: 'Guide de diagnostic des sessions', fields: [['Emplacement', 'Support › Application mobile'], ['Révision', '8'], ['Rattaché à', 'MOB-42'], ['Accès', 'Équipe Mobile']],
+            text: 'Reproduire la reprise de session après une mise en veille de cinq minutes.',
+            actions: [{ name: 'Créer un document', field: 'Titre', example: 'Plan de recette' }, { name: 'Corriger le Markdown', field: 'Nouveau texte', long: true }, { name: 'Déplacer la page', field: 'Emplacement', options: ['Support', 'Procédures'] }, { name: 'Commenter le document', field: 'Commentaire', long: true }] },
+          { tab: 'Fichiers et accès', title: 'Fichiers et accès du guide', entries: ['capture-reprise.png · 248 Ko', 'Camille Martin · Édition', 'Alex Nguyen · Lecture'],
+            actions: [{ name: 'Ajouter un fichier', field: 'Fichier', file: true }, { name: 'Retirer le fichier', sensitive: 'Le fichier capture-reprise.png sera retiré du guide.' }, { name: 'Partager le document', field: 'Membre', options: ['Alex Nguyen'], sensitive: 'Alex Nguyen recevra l’accès en lecture à ce document.' }, { name: 'Retirer le partage', field: 'Membre', options: ['Alex Nguyen'], sensitive: 'Alex Nguyen perdra son accès explicite au document.' }] },
+          { tab: 'Notifications', title: 'Notifications', entries: ['Alex Nguyen vous a mentionnée dans Guide de diagnostic des sessions.'],
+            actions: [{ name: 'Marquer comme lue' }, { name: 'Reporter la notification', field: 'Reporter de', options: ['Une heure', 'Un jour'] }] },
+        ],
+      },
+      customers: {
+        title: 'Clients et demandes', search: 'Rechercher un client ou une demande',
+        records: [
+          { tab: 'Clients', title: 'Atelier Horizon', fields: [['Domaine', 'horizon.example'], ['Responsable', 'Camille Martin'], ['Demandes ouvertes', '2']],
+            actions: [{ name: 'Créer une fiche client', field: 'Nom du client', example: 'Studio Atlas' }, { name: 'Modifier la fiche client', field: 'Nom', example: 'Atelier Horizon' }, { name: 'Supprimer la fiche client', sensitive: 'La fiche client et ses liens seront retirés. Les tickets associés seront conservés.' }] },
+          { tab: 'Demandes', title: 'Reprendre une session après veille', fields: [['Client', 'Atelier Horizon'], ['Source', 'Entretien du 24 novembre'], ['Ticket', 'MOB-42'], ['Initiative', 'Fiabiliser la connexion']],
+            actions: [{ name: 'Enregistrer une demande', field: 'Description de la demande', long: true }, { name: 'Rattacher la demande', field: 'Cible', options: ['MOB-42 · Corriger la reprise de session', 'Application mobile'] }, { name: 'Archiver la demande', sensitive: 'La demande ne figurera plus dans les demandes actives.' }] },
+        ],
+      },
+      releases: {
+        title: 'Releases et revues',
+        records: [
+          { tab: 'Releases', title: 'Version 3.0.0', fields: [['Pipeline', 'Application mobile'], ['Étape', 'Recette'], ['Tickets associés', 'MOB-42 et MOB-43']],
+            actions: [{ name: 'Créer un pipeline', field: 'Nom du pipeline', example: 'Application tablette' }, { name: 'Créer une release', field: 'Version', example: '3.0.1' }, { name: 'Changer l’étape', field: 'Étape', options: ['Planifiée', 'Recette', 'Publiée'] }, { name: 'Rédiger les notes de version', field: 'Notes de version', long: true }] },
+          { tab: 'Revues GitHub', title: 'PR #24 · Corriger la reprise de session', fields: [['Dépôt', 'equipe-mobile/application'], ['Branche cible', 'main'], ['Vérifications', '2 réussies sur 2'], ['Ticket', 'MOB-42']],
+            entries: ['src/session.ts · Ne renouveler le jeton qu’après reprise de la session.', 'Alex Nguyen · Couvrir aussi le retour de veille.'],
+            actions: [{ name: 'Relier un ticket', field: 'Identifiant du ticket', example: 'MOB-42' }, { name: 'Commenter la revue', field: 'Commentaire', long: true }, { name: 'Demander des changements', field: 'Motif', long: true }, { name: 'Approuver la revue', sensitive: 'L’approbation sera publiée sur la PR #24 au nom de votre compte GitHub.' }, { name: 'Fusionner la PR', sensitive: 'La PR #24 sera fusionnée dans main si les conditions GitHub sont remplies.' }] },
+          { tab: 'Critères', title: 'Critères de revue du dépôt', entries: ['Accessibilité · Vérifier la navigation clavier', 'Sessions · Couvrir le renouvellement des jetons'],
+            actions: [{ name: 'Ajouter un critère', field: 'Consigne', long: true }, { name: 'Créer un ticket depuis un constat', field: 'Titre', example: 'Tester la reprise au clavier' }] },
+        ],
+      },
+      agents: {
+        title: 'Contexte des assistants', search: 'Rechercher une consigne ou une note',
+        records: [
+          { tab: 'Consignes', title: 'Consignes de l’équipe Mobile', fields: [['Visibilité', 'Équipe Mobile'], ['Responsable', 'Camille Martin']],
+            entries: ['Utiliser une base jetable pour les recettes.', 'Vérifier les états de session après la mise en veille.'],
+            actions: [{ name: 'Modifier une consigne', field: 'Consigne', long: true }] },
+          { tab: 'Notes vérifiées', title: 'Reprise de session sur iOS', fields: [['Vérifié par', 'Camille Martin'], ['Source', 'Recette locale du 24 novembre'], ['Visibilité', 'Équipe Mobile']],
+            actions: [{ name: 'Enregistrer un apprentissage', field: 'Constat et source de vérification', long: true }, { name: 'Marquer cette note comme utile' }] },
+          { tab: 'Blocages', title: 'Signalements de l’équipe', entries: ['Le cas de reprise hors ligne manque dans la suite de recette.'],
+            actions: [{ name: 'Signaler un blocage', field: 'Blocage constaté', long: true }] },
+        ],
+      },
+    };
+
+    const byId = id => document.getElementById(id);
+    const main = byId('screen');
+    const dialog = byId('dialog');
+    const scenario = byId('scenario');
+    const groups = new Map(families.map(([id, label, read, write]) => [id, { label, read, write }]));
+    const grants = [
+      { assistant: 'Claude', space: 'Équipe Mobile', version: 'Lecture seule · MVP',
+        permissions: ['Lister les projets et rechercher ou consulter les tickets.'] },
+      { assistant: 'ChatGPT', space: 'Équipe Mobile', version: 'Lecture et écriture · V2',
+        permissions: ['Lister les projets et rechercher ou consulter les tickets.', 'Créer des tickets et ajouter des commentaires.'] },
+    ];
+    const tabs = new Map();
+    let current = 'integrations';
+    let submitAction;
+
+    function el(tag, properties = {}, ...children) {
+      const node = document.createElement(tag);
+      for (const [name, value] of Object.entries(properties)) node.setAttribute(name, value);
+      node.append(...children);
+      return node;
+    }
+
+    function button(label, click, kind = '') {
+      const control = el('button', { class: ('button ' + kind).trim(), type: 'button' }, label);
+      control.addEventListener('click', click);
+      return control;
+    }
+
+    function setHeading(title, location, detail) {
+      const heading = el('h1', { id: 'screen-title', tabindex: '-1' }, title);
+      const header = el('header', { class: 'tight' }, el('p', { class: 'location' }, location), heading);
+      if (detail) header.append(el('p', { class: 'muted' }, detail));
+      main.append(header);
+      return heading;
+    }
+
+    function announce(message, error = false) {
+      const status = byId('screen-status');
+      status.dataset.error = String(error);
+      status.textContent = message;
+    }
+
+    function show(screen, message = '', error = false, focus = true) {
+      current = screen;
+      for (const control of byId('navigation').querySelectorAll('button')) {
+        if (control.dataset.screen === screen) control.setAttribute('aria-current', 'page');
+        else control.removeAttribute('aria-current');
+      }
+      main.replaceChildren();
+      if (screen === 'integrations') renderIntegrations();
+      else if (screen === 'consent') renderConsent();
+      else renderDomain(screen);
+      main.querySelector('header').after(el('p', { class: 'notice', id: 'screen-status', role: 'status' }));
+      if (message) announce(message, error);
+      if (focus) byId('screen-title').focus();
+    }
+
+    function renderIntegrations() {
+      setHeading('Assistants IA', 'Paramètres › Intégrations', 'Connectez un assistant à un espace Circular et gérez les accès accordés.');
+      const endpoint = el('input', { id: 'endpoint', value: 'https://circular.example/mcp', readonly: '' });
+      const copy = button('Copier l’adresse', async () => {
+        try {
+          await navigator.clipboard.writeText(endpoint.value);
+          announce('Adresse copiée.');
+        } catch {
+          endpoint.select();
+          announce('Sélectionnez et copiez l’adresse du serveur.');
+        }
+      });
+      main.append(el('div', { class: 'tight' }, el('label', { for: 'endpoint' }, 'Adresse du serveur MCP'),
+        el('div', { class: 'preview-toolbar' }, endpoint, copy)),
+        el('div', { class: 'actions' }, button('Ouvrir une demande V3', () => show('consent'), 'primary')));
+      const list = el('div', { class: 'connections' });
+      if (!grants.length) list.append(el('p', { class: 'muted' }, 'Aucune connexion autorisée.'));
+      for (const grant of grants) {
+        const details = el('details', {}, el('summary', {}, 'Détail des autorisations'),
+          el('ul', {}, ...grant.permissions.map(permission => el('li', {}, permission))));
+        const revoke = button('Révoquer', () => {
+          openDialog({
+            name: 'Révoquer cette connexion',
+            summary: grant.assistant + ' perdra les autorisations de cette connexion pour « ' + grant.space + ' ».',
+            sensitive: true,
+            success: () => {
+              grants.splice(grants.indexOf(grant), 1);
+              show('integrations', 'Connexion de ' + grant.assistant + ' révoquée.');
+            },
+          });
+        }, 'danger');
+        revoke.setAttribute('aria-label', 'Révoquer ' + grant.assistant + ' · ' + grant.version + ' · ' + grant.space);
+        list.append(el('article', { class: 'connection' }, el('div', { class: 'tight' },
+          el('h3', {}, grant.assistant + ' · ' + grant.version), el('p', { class: 'muted' }, grant.space), details), revoke));
+      }
+      main.append(el('div', { class: 'tight' }, el('h2', {}, 'Connexions autorisées'), list));
+    }
+
+    function renderConsent() {
+      if (scenario.value === 'expired') {
+        setHeading('La demande a expiré', 'Autorisation de l’assistant', 'Relancez la connexion depuis Claude pour obtenir une nouvelle demande.');
+        main.append(el('div', { class: 'actions' }, button('Retour aux intégrations', () => show('integrations'))));
+        return;
+      }
+      setHeading('Autoriser Claude dans Circular', 'Autorisation de l’assistant', 'Connectée en tant que Camille Martin.');
+      const spaces = el('select', { id: 'space', required: '' }, el('option', { value: '' }, 'Choisir un espace'),
+        el('option', {}, 'Équipe Mobile'), el('option', {}, 'Infrastructure'));
+      const form = el('form', { class: 'stack' }, el('div', { class: 'tight' }, el('label', { for: 'space' }, 'Espace autorisé'), spaces),
+        el('div', { class: 'permission-group' }, el('h2', {}, 'Lecture de base'),
+          el('p', { class: 'muted' }, 'Lister les projets et rechercher ou consulter les tickets accessibles.')));
+      const selection = [];
+      const legacy = el('input', { type: 'checkbox', id: 'create-and-comment' });
+      form.append(el('div', { class: 'permission-group' }, el('label', { for: 'create-and-comment', class: 'confirm-option' }, legacy,
+        'Créer des tickets et ajouter des commentaires')));
+      for (const [id, family] of groups) {
+        const read = el('input', { type: 'checkbox', id: id + '-read' });
+        const write = el('input', { type: 'checkbox', id: id + '-write' });
+        read.addEventListener('change', () => { if (!read.checked) write.checked = false; });
+        write.addEventListener('change', () => { if (write.checked) read.checked = true; });
+        selection.push({ family, read, write });
+        form.append(el('fieldset', { class: 'permission-group' }, el('legend', {}, family.label),
+          el('p', { class: 'muted' }, family.read + ' ' + family.write),
+          el('div', { class: 'permit-options' },
+            el('label', { for: read.id }, read, 'Consulter'), el('label', { for: write.id }, write, 'Modifier'))));
+      }
+      form.append(el('p', { class: 'muted' }, 'Les résultats sont transmis à Claude. Circular demande une confirmation pour le partage, la suppression et la fusion.'));
+      const allow = el('button', { class: 'button primary', type: 'submit', disabled: '' }, 'Autoriser les accès sélectionnés');
+      spaces.addEventListener('change', () => { allow.disabled = !spaces.value; });
+      form.append(el('div', { class: 'actions' }, button('Refuser', () => show('integrations', 'Demande refusée.')), allow));
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        if (scenario.value === 'forbidden') {
+          announce('Cet espace n’est plus accessible. Aucune autorisation n’a été accordée.', true);
+          return;
+        }
+        const permissions = ['Lister les projets et rechercher ou consulter les tickets.'];
+        if (legacy.checked) permissions.push('Créer des tickets et ajouter des commentaires.');
+        for (const { family, read, write } of selection) {
+          if (read.checked) permissions.push(family.label + ' · ' + (write.checked ? 'Consultation et modification' : 'Consultation'));
+        }
+        grants.push({ assistant: 'Claude', space: spaces.value, version: 'Accès personnalisés · V3', permissions });
+        show('integrations', 'Accès accordés pour « ' + spaces.value + ' ».');
+      });
+      main.append(form);
+    }
+
+    function renderDomain(screen) {
+      const domain = data[screen];
+      const selected = tabs.get(screen) || 0;
+      const record = domain.records[selected];
+      setHeading(domain.title, 'Équipe Mobile');
+      const switcher = el('div', { class: 'switcher', role: 'group', 'aria-label': 'Rubriques' });
+      domain.records.forEach((item, index) => {
+        const tab = button(item.tab, () => { tabs.set(screen, index); show(screen); });
+        tab.setAttribute('aria-pressed', String(selected === index));
+        switcher.append(tab);
+      });
+      main.append(switcher);
+
+      if (domain.search) {
+        const input = el('input', { id: 'search', type: 'search', placeholder: domain.search, 'aria-label': domain.search });
+        const search = el('form', { class: 'preview-toolbar' }, input, el('button', { class: 'button', type: 'submit' }, 'Rechercher'));
+        const results = el('ul', { class: 'search-results', 'aria-label': 'Résultats de recherche', hidden: '' });
+        search.addEventListener('submit', event => {
+          event.preventDefault();
+          const query = input.value.trim().toLocaleLowerCase('fr');
+          const sources = screen === 'docs' ? ['tickets', 'projects', 'docs'] : [screen];
+          const matches = sources.flatMap(source => data[source].records.map((entry, index) => ({ source, entry, index })))
+            .filter(({ entry }) => [entry.title, entry.text || ''].some(text => text.toLocaleLowerCase('fr').includes(query)));
+          const visible = scenario.value === 'forbidden' ? [] : matches;
+          results.replaceChildren();
+          for (const match of visible) {
+            const label = data[match.source].title + ' · ' + match.entry.title;
+            results.append(el('li', {}, button(label, () => {
+              tabs.set(match.source, match.index);
+              show(match.source);
+            })));
+          }
+          results.hidden = visible.length === 0;
+          byId('record').hidden = true;
+          announce(visible.length ? visible.length + ' résultat(s).' : 'Aucun résultat accessible pour cette recherche.');
+        });
+        main.append(search, results);
+      }
+
+      const section = el('article', { id: 'record', class: 'stack', 'aria-label': record.title }, el('h2', {}, record.title));
+      if (record.fields) {
+        section.append(el('dl', { class: 'fields' }, ...record.fields.map(([name, value]) =>
+          el('div', {}, el('dt', {}, name), el('dd', {}, value)))));
+      }
+      if (record.text) section.append(el('p', {}, record.text));
+      if (record.entries) section.append(el('ul', {}, ...record.entries.map(entry => el('li', {}, entry))));
+      const actions = el('div', { class: 'actions' });
+      for (const action of record.actions) actions.append(button(action.name, () => openDomainAction(record, action)));
+      section.append(actions);
+      main.append(section);
+    }
+
+    function openDomainAction(record, action) {
+      openDialog({
+        ...action,
+        summary: action.sensitive || 'Cible dans Équipe Mobile : ' + record.title + '.',
+        values: new Map(record.fields || []),
+        success: values => {
+          for (const [name, value] of values) {
+            const field = record.fields?.find(pair => pair[0] === name);
+            if (field && value) field[1] = value;
+          }
+          if (action.long && record.entries) record.entries.push('Camille Martin · ' + values.get(action.field));
+          show(current, 'Action enregistrée · ' + action.name + '.', false, false);
+          byId('screen-title').focus();
+        },
+      });
+    }
+
+    function openDialog(action) {
+      byId('dialog-title').textContent = action.name;
+      byId('dialog-summary').textContent = action.summary;
+      byId('dialog-error').textContent = '';
+      const fields = byId('dialog-fields');
+      fields.replaceChildren();
+      const specs = action.fields || (action.field ? [action] : []);
+      const controls = specs.map((spec, index) => {
+        const id = 'action-input-' + index;
+        let input;
+        if (spec.options) input = el('select', { id, required: '' }, ...spec.options.map(option => el('option', {}, option)));
+        else if (spec.long) input = el('textarea', { id, required: '' });
+        else input = el('input', { id, type: spec.file ? 'file' : 'text', required: '' });
+        const value = spec.example || action.values?.get(spec.field);
+        if (value && (!spec.options || spec.options.includes(value))) input.value = value;
+        fields.append(el('label', { for: id }, spec.field), input);
+        return [spec.field, input];
+      });
+      const execute = byId('execute');
+      execute.className = 'button ' + (action.sensitive ? 'danger' : 'primary');
+      execute.textContent = action.sensitive ? 'Confirmer' : 'Enregistrer';
+      execute.disabled = Boolean(action.sensitive);
+      if (action.sensitive) {
+        const check = el('input', { id: 'confirm-action', type: 'checkbox' });
+        check.addEventListener('change', () => { execute.disabled = !check.checked; });
+        fields.append(el('label', { for: 'confirm-action', class: 'confirm-option' }, check, 'Je confirme cette action sur la cible indiquée.'));
+      }
+      submitAction = () => {
+        if (scenario.value === 'forbidden' && current !== 'integrations') {
+          byId('dialog-error').textContent = 'L’accès à cette cible a été retiré. Aucune action n’a été appliquée.';
+          return;
+        }
+        if (scenario.value === 'conflict' && current !== 'integrations') {
+          byId('dialog-error').textContent = 'La cible a changé depuis sa consultation. Fermez cette fenêtre, relisez-la puis recommencez.';
+          return;
+        }
+        if (scenario.value === 'expired' && current !== 'integrations') {
+          byId('dialog-error').textContent = 'La confirmation a expiré. Relancez l’action depuis Circular.';
+          return;
+        }
+        dialog.close('confirmed');
+        action.success(new Map(controls.map(([name, input]) => [name, input.value])));
+      };
+      dialog.showModal();
+    }
+
+    byId('cancel').addEventListener('click', () => dialog.close('cancelled'));
+    byId('action-form').addEventListener('submit', event => {
+      event.preventDefault();
+      if (!byId('execute').disabled) submitAction();
+    });
+    scenario.addEventListener('change', () => {
+      if (current === 'consent') show('consent', '', false, false);
+    });
+
+    for (const [id, title] of [['integrations', 'Assistants IA'], ['consent', 'Demande V3'], ...families]) {
+      const item = button(title, () => show(id));
+      item.dataset.screen = id;
+      byId('navigation').append(item);
+    }
+    show(current, '', false, false);
+  </script>
+</body>
+</html>

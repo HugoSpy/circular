@@ -42,18 +42,19 @@ class WorkspaceRepository:
             access, values = self.access_clause()
             self.connection.execute(f"SELECT id FROM issues WHERE id = ? AND project_id IN (SELECT p.id FROM projects p WHERE {access}) FOR UPDATE", [issue_id, *values]).fetchone()
 
-    def lock_project(self, project_id: int) -> None:
+    def lock_project(self, project_id: int, *, shared: bool = False) -> None:
         if getattr(self.connection, "dialect", "sqlite") == "postgresql":
             access, values = self.access_clause()
-            self.connection.execute(f"SELECT p.id FROM projects p WHERE p.id = ? AND {access} FOR UPDATE", [project_id, *values]).fetchone()
+            lock = "FOR SHARE" if shared else "FOR UPDATE"
+            self.connection.execute(f"SELECT p.id FROM projects p WHERE p.id = ? AND {access} {lock}", [project_id, *values]).fetchone()
 
     def project(self, project_id: int) -> dict | None:
         access, values = self.access_clause()
         if not self.connection.execute(f"SELECT id FROM projects p WHERE p.id = ? AND {access}", [project_id, *values]).fetchone():
             return None
         row = self.connection.execute("""SELECT p.id, p.name, p.key, p.description, p.color, p.status, p.due_date AS dueDate,
-            p.created_at AS createdAt, p.workspace_id AS workspaceId, p.visibility, COUNT(i.id) AS issueCount,
-            COALESCE(SUM(CASE WHEN i.status = 'done' THEN 1 ELSE 0 END), 0) AS doneCount
+            p.created_at AS createdAt, p.workspace_id AS workspaceId, p.visibility, COUNT(CASE WHEN i.archived_at IS NULL THEN i.id END) AS issueCount,
+            COALESCE(SUM(CASE WHEN i.status = 'done' AND i.archived_at IS NULL THEN 1 ELSE 0 END), 0) AS doneCount
             FROM projects p LEFT JOIN issues i ON i.project_id = p.id WHERE p.id = ? GROUP BY p.id""", (project_id,)).fetchone()
         result = dict(row) if row else None
         if result is not None:
@@ -62,9 +63,13 @@ class WorkspaceRepository:
             result["role"] = "owner" if self.user_id is None or owner["owner_user_id"] == self.user_id or workspace_owner else "member"
         return result
 
-    def projects(self, *, limit: int | None = None, after_id: int = 0) -> list[dict]:
+    def projects(self, *, limit: int | None = None, after_id: int = 0, query_text: str = "") -> list[dict]:
         access, values = self.access_clause()
         query = f"SELECT id FROM projects p WHERE {access}"
+        if query_text:
+            pattern = query_text.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            query += " AND (lower(p.name) LIKE ? ESCAPE '\\' OR lower(p.key) LIKE ? ESCAPE '\\')"
+            values.extend([f"%{pattern}%", f"%{pattern}%"])
         if limit is not None:
             query += " AND p.id > ? ORDER BY p.id LIMIT ?"
             values.extend([after_id, limit])
@@ -101,11 +106,13 @@ class WorkspaceRepository:
 
     def issues(self, filters: dict, *, limit: int | None = None, after_id: int = 0) -> list[dict]:
         clauses, values = [], []
+        if not filters.get("includeArchived"):
+            clauses.append("archived_at IS NULL")
         if self.user_id is not None or self.workspace_id is not None:
             access, access_values = self.access_clause()
             clauses.append(f"project_id IN (SELECT p.id FROM projects p WHERE {access})")
             values.extend(access_values)
-        for name, column in (("projectId", "project_id"),):
+        for name, column in (("projectId", "project_id"), ("assigneeId", "assignee_id")):
             if filters.get(name) is not None:
                 clauses.append(f"{column} = ?")
                 values.append(filters[name])

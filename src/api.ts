@@ -17,7 +17,7 @@ export async function request<T>(path: string, options: RequestInit = {}, scope:
   let response: Response;
   try {
     const headers = new Headers(options.headers);
-    headers.set('Content-Type', 'application/json');
+    if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
     if (scope != null) headers.set('X-Workspace-Id', String(scope));
     if (csrfToken && options.method && !['GET', 'HEAD', 'OPTIONS'].includes(options.method.toUpperCase())) headers.set('X-CSRF-Token', csrfToken);
     response = await fetch(`/api${path}`, { ...options, credentials: 'same-origin', headers });

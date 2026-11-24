@@ -57,3 +57,5 @@
   .create-more input { width: 18px; height: 18px; }
   .comment-edit-form .comment-actions { flex-wrap: wrap; }
 }
+.issue-planning-plan { padding-top: 8px; color: var(--muted); }
+.issue-planning-plan p { margin: 4px 0; }

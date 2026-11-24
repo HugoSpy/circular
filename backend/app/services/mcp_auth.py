@@ -15,7 +15,9 @@ from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
 
 from backend.app.db.session import Database, timestamp
 from backend.app.services.auth import verifier
-from backend.app.services.mcp_tools import READ_SCOPE
+from backend.app.services.mcp_policy import (
+    ALL_SCOPES, FAMILY_SCOPES, READ_SCOPE, WRITE_SCOPE, row_scopes, scope_columns, scope_options, scope_string, valid_scopes,
+)
 from backend.app.services.spaces import SpacesService
 from backend.app.services.workspace import DomainError
 
@@ -60,7 +62,10 @@ class CircularMcpAuth:
     def get_client(self, client_id: str) -> OAuthClientInformationFull | None:
         with self.database.connect() as connection:
             row = connection.execute("SELECT metadata FROM mcp_clients WHERE id = ?", (client_id,)).fetchone()
-        return OAuthClientInformationFull.model_validate_json(row["metadata"]) if row else None
+        if not row:
+            return None
+        # Registration allows a client to request a scope. Only the user's grant confers it.
+        return OAuthClientInformationFull.model_validate_json(row["metadata"]).model_copy(update={"scope": scope_string(ALL_SCOPES)})
 
     @threaded
     def register_client(self, client_info: OAuthClientInformationFull) -> None:
@@ -83,9 +88,10 @@ class CircularMcpAuth:
             raise AuthorizeError("invalid_request", "Demande d’autorisation MCP invalide.")
         if params.resource not in {None, self.resource}:
             raise AuthorizeError("invalid_request", "Ressource MCP invalide.")
-        if set(params.scopes or [READ_SCOPE]) != {READ_SCOPE}:
-            raise AuthorizeError("invalid_scope", "Cet accès permet la lecture des projets et tickets.")
-        params = params.model_copy(update={"resource": self.resource})
+        scopes = set(params.scopes or [READ_SCOPE])
+        if not valid_scopes(scopes):
+            raise AuthorizeError("invalid_scope", "L’écriture doit être demandée avec la lecture.")
+        params = params.model_copy(update={"resource": self.resource, "scopes": sorted(scopes)})
         request_id = secrets.token_urlsafe(32)
         now = int(time.time())
         with self.database.connect(write=True) as connection:
@@ -97,15 +103,19 @@ class CircularMcpAuth:
 
     def pending(self, request_id: str, user_id: int) -> dict:
         with self.database.connect() as connection:
-            row = connection.execute("""SELECT c.metadata FROM mcp_authorizations a
+            row = connection.execute("""SELECT c.metadata, a.parameters FROM mcp_authorizations a
                 JOIN mcp_clients c ON c.id = a.client_id WHERE a.request_hash = ? AND a.expires_at > ?""",
                 (verifier(request_id), int(time.time()))).fetchone()
         if row is None:
             raise DomainError(404, "La demande d’autorisation a expiré.")
+        params = AuthorizationParams.model_validate_json(row["parameters"])
+        families = scope_options(params.scopes or [])
         return {"client": self.client_name(OAuthClientInformationFull.model_validate_json(row["metadata"])),
+                "write": WRITE_SCOPE in (params.scopes or []),
+                **({"families": families} if families else {}),
                 "workspaces": [{"id": row["id"], "name": row["name"]} for row in SpacesService(self.database, user_id).workspaces()]}
 
-    def decide(self, request_id: str, user_id: int, workspace_id: int | None) -> str:
+    def decide(self, request_id: str, user_id: int, workspace_id: int | None, write: bool, extra: list[str] | None) -> str:
         now = int(time.time())
         with self.database.connect(write=True) as connection:
             if workspace_id is not None:
@@ -123,9 +133,19 @@ class CircularMcpAuth:
                 raise DomainError(404, "La demande d’autorisation a expiré.")
             if workspace_id is None:
                 return construct_redirect_uri(str(params.redirect_uri), error="access_denied", state=params.state)
+            requested = set(params.scopes or [READ_SCOPE])
+            approved = {READ_SCOPE, *(extra or [])}
+            if write:
+                approved.add(WRITE_SCOPE)
+            advanced = bool(requested & FAMILY_SCOPES)
+            if (not valid_scopes(approved) or not approved <= requested or
+                    (advanced and extra is None) or (not advanced and approved != requested) or
+                    (extra is not None and not set(extra) <= FAMILY_SCOPES)):
+                raise DomainError(422, "L’accord doit correspondre à l’accès demandé.")
             code = secrets.token_urlsafe(32)
             connection.execute("INSERT INTO mcp_codes VALUES (?, ?, ?, ?, ?, ?)",
-                               (verifier(code), row["client_id"], user_id, workspace_id, row["parameters"], now + CODE_TTL))
+                               (verifier(code), row["client_id"], user_id, workspace_id,
+                                params.model_copy(update={"scopes": sorted(approved)}).model_dump_json(), now + CODE_TTL))
             return construct_redirect_uri(str(params.redirect_uri), code=code, state=params.state)
 
     @threaded
@@ -138,21 +158,21 @@ class CircularMcpAuth:
         params = AuthorizationParams.model_validate_json(row["parameters"])
         if params.resource != self.resource or not self.allowed_redirect(str(params.redirect_uri)):
             return None
-        return CircularCode(code=authorization_code, scopes=[READ_SCOPE], expires_at=row["expires_at"],
+        return CircularCode(code=authorization_code, scopes=params.scopes or [READ_SCOPE], expires_at=row["expires_at"],
                             client_id=row["client_id"], redirect_uri=params.redirect_uri,
                             redirect_uri_provided_explicitly=params.redirect_uri_provided_explicitly,
                             code_challenge=params.code_challenge, resource=self.resource,
                             user_id=row["user_id"], workspace_id=row["workspace_id"])
 
     @staticmethod
-    def new_tokens() -> OAuthToken:
+    def new_tokens(scopes: list[str]) -> OAuthToken:
         return OAuthToken(access_token=secrets.token_urlsafe(32), refresh_token=secrets.token_urlsafe(32),
-                          expires_in=ACCESS_TTL, scope=READ_SCOPE)
+                          expires_in=ACCESS_TTL, scope=scope_string(scopes))
 
     @threaded
     def exchange_authorization_code(self, client: OAuthClientInformationFull, authorization_code: CircularCode) -> OAuthToken:
         now = int(time.time())
-        tokens = self.new_tokens()
+        tokens = self.new_tokens(authorization_code.scopes)
         with self.database.connect(write=True) as connection:
             lock = " FOR KEY SHARE" if self.database.dialect == "postgresql" else ""
             if connection.execute("SELECT 1 FROM workspace_members WHERE workspace_id = ? AND user_id = ?" + lock,
@@ -162,48 +182,50 @@ class CircularMcpAuth:
                 RETURNING user_id, workspace_id""", (verifier(authorization_code.code), client.client_id, now)).fetchone()
             if row is None:
                 raise TokenError("invalid_grant")
-            connection.execute("INSERT INTO mcp_connections VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            connection.execute("""INSERT INTO mcp_connections
+                (id, client_id, user_id, workspace_id, resource, access_hash, refresh_hash, access_expires_at,
+                 refresh_expires_at, created_at, scope, family_scopes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                                (str(uuid4()), client.client_id, row["user_id"], row["workspace_id"], self.resource,
                                 verifier(tokens.access_token), verifier(tokens.refresh_token), now + ACCESS_TTL,
-                                now + REFRESH_TTL, timestamp()))
+                                now + REFRESH_TTL, timestamp(), *scope_columns(authorization_code.scopes)))
         return tokens
 
     @threaded
     def load_access_token(self, token: str) -> AccessToken | None:
         with self.database.connect() as connection:
-            row = connection.execute("""SELECT client_id, user_id, workspace_id, access_expires_at FROM mcp_connections
+            row = connection.execute("""SELECT client_id, user_id, workspace_id, access_expires_at, scope, family_scopes FROM mcp_connections
                 WHERE access_hash = ? AND resource = ? AND access_expires_at > ?""",
                 (verifier(token), self.resource, int(time.time()))).fetchone()
         if not row:
             return None
-        return AccessToken(token=token, client_id=row["client_id"], scopes=[READ_SCOPE], expires_at=row["access_expires_at"],
+        return AccessToken(token=token, client_id=row["client_id"], scopes=row_scopes(row), expires_at=row["access_expires_at"],
                            resource=self.resource, subject=str(row["user_id"]),
                            claims={"user_id": row["user_id"], "workspace_id": row["workspace_id"]})
 
     @threaded
     def load_refresh_token(self, client: OAuthClientInformationFull, refresh_token: str) -> RefreshToken | None:
         with self.database.connect() as connection:
-            row = connection.execute("""SELECT refresh_expires_at FROM mcp_connections WHERE refresh_hash = ?
+            row = connection.execute("""SELECT refresh_expires_at, scope, family_scopes FROM mcp_connections WHERE refresh_hash = ?
                 AND client_id = ? AND resource = ? AND refresh_expires_at > ?""",
                 (verifier(refresh_token), client.client_id, self.resource, int(time.time()))).fetchone()
         if not row:
             return None
-        return RefreshToken(token=refresh_token, client_id=client.client_id, scopes=[READ_SCOPE],
+        return RefreshToken(token=refresh_token, client_id=client.client_id, scopes=row_scopes(row),
                             expires_at=row["refresh_expires_at"], resource=self.resource)
 
     @threaded
     def exchange_refresh_token(self, client: OAuthClientInformationFull, refresh_token: RefreshToken, scopes: list[str]) -> OAuthToken:
-        if set(scopes) != {READ_SCOPE}:
+        if not valid_scopes(set(scopes)) or not set(scopes).issubset(refresh_token.scopes):
             raise TokenError("invalid_scope")
         now = int(time.time())
         if not refresh_token.expires_at or refresh_token.expires_at <= now:
             raise TokenError("invalid_grant")
         expires_in = min(ACCESS_TTL, refresh_token.expires_at - now)
-        tokens = self.new_tokens().model_copy(update={"expires_in": expires_in})
+        tokens = self.new_tokens(scopes).model_copy(update={"expires_in": expires_in})
         with self.database.connect(write=True) as connection:
-            updated = connection.execute("""UPDATE mcp_connections SET access_hash = ?, refresh_hash = ?, access_expires_at = ?
+            updated = connection.execute("""UPDATE mcp_connections SET access_hash = ?, refresh_hash = ?, access_expires_at = ?, scope = ?, family_scopes = ?
                 WHERE refresh_hash = ? AND client_id = ? AND resource = ? AND refresh_expires_at > ?""",
-                (verifier(tokens.access_token), verifier(tokens.refresh_token), now + expires_in,
+                (verifier(tokens.access_token), verifier(tokens.refresh_token), now + expires_in, *scope_columns(scopes),
                  verifier(refresh_token.token), client.client_id, self.resource, now))
             if updated.rowcount != 1:
                 raise TokenError("invalid_grant")
@@ -218,11 +240,13 @@ class CircularMcpAuth:
 
     def connections(self, user_id: int) -> list[dict]:
         with self.database.connect() as connection:
-            rows = connection.execute("""SELECT g.id, g.created_at, w.name AS workspace, c.metadata
+            rows = connection.execute("""SELECT g.id, g.created_at, g.scope, g.family_scopes, w.name AS workspace, c.metadata
                 FROM mcp_connections g JOIN mcp_clients c ON c.id = g.client_id JOIN workspaces w ON w.id = g.workspace_id
                 WHERE g.user_id = ? AND g.resource = ? AND g.refresh_expires_at > ? ORDER BY g.created_at DESC, g.id""",
                 (user_id, self.resource, int(time.time()))).fetchall()
         return [{"id": row["id"], "workspace": row["workspace"], "createdAt": row["created_at"],
+                 "write": WRITE_SCOPE in row["scope"].split(),
+                 **({"families": scope_options(row_scopes(row))} if row["family_scopes"] else {}),
                  "client": self.client_name(OAuthClientInformationFull.model_validate_json(row["metadata"]))} for row in rows]
 
     def revoke_connection(self, user_id: int, connection_id: str) -> None:

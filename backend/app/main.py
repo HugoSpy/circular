@@ -10,8 +10,10 @@ from backend.app.api.preferences import router as preferences_router
 from backend.app.api.auth import router as auth_router
 from backend.app.api.sharing import router as sharing_router
 from backend.app.api.spaces import router as spaces_router
-from backend.app.api.frontend import mount_frontend
+from backend.app.api.docs import router as docs_router
+from backend.app.api.records import document_shares_router, github_router, router as records_router, shares_router
 from backend.app.api.mcp import mount_mcp
+from backend.app.api.frontend import mount_frontend
 from backend.app.core.config import ROOT, database_target, email_config, public_url
 from backend.app.core.security import LocalSecurityMiddleware
 from backend.app.db.session import Database
@@ -58,6 +60,11 @@ def create_app(db_path: Path | str | None = None, dist_path: Path | str | None =
     app.include_router(auth_router)
     app.include_router(sharing_router)
     app.include_router(spaces_router)
+    app.include_router(docs_router)
+    app.include_router(records_router)
+    app.include_router(shares_router)
+    app.include_router(document_shares_router)
+    app.include_router(github_router)
     mount_mcp(app, origin)
     mount_frontend(app, Path(dist_path) if dist_path is not None else ROOT / "dist")
     return app

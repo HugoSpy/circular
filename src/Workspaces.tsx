@@ -21,7 +21,7 @@ function workspaceUrl(workspace: Workspace, preserveIssue = false) {
   const url = new URL(location.href);
   url.searchParams.set('workspace', workspace.slug);
   if (!preserveIssue) url.searchParams.delete('setup');
-  if (!preserveIssue) { url.searchParams.delete('issue'); url.searchParams.delete('mode'); }
+  if (!preserveIssue) { url.searchParams.delete('issue'); url.searchParams.delete('mode'); url.searchParams.delete('docs'); }
   history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
 }
 function inviteToken() { return new URLSearchParams(location.hash.slice(1)).get('workspace-invite'); }
@@ -75,7 +75,7 @@ export function WorkspaceGate({ user, onUserUpdated, onSessionEnd, children }: {
   if (unavailable) return <main className="auth-shell"><div className="auth-card"><h1>Espace inaccessible</h1><p className="auth-intro">Vous ne disposez pas d’un accès à cet espace, ou son identifiant a changé.</p><div className="workspace-choice-list">{workspaces.map(item => <button className="button" key={item.id} onClick={() => select(item)}>Ouvrir {item.name}</button>)}</div><button className="button primary" onClick={() => { setUnavailable(false); setCreating(true); }}>Créer un espace</button></div></main>;
   if (creating || !workspace) return <><CreateWorkspace user={user} onCreated={created} onCancel={workspace ? () => setCreating(false) : undefined} onInbox={() => setInbox(true)} onSessionEnd={onSessionEnd} />{inbox && <InvitationsDialog onClose={() => setInbox(false)} onChanged={async id => { await load(false, id); setInbox(false); }} />}</>;
   if (!workspace.onboardingCompleted && workspace.role === 'owner') return <WorkspaceOnboarding key={workspace.id} workspace={workspace} user={user} onUserUpdated={onUserUpdated} onComplete={finish} onSessionEnd={onSessionEnd} />;
-  return children({ workspace, workspaces, selectWorkspace: id => { const next = workspaces.find(item => item.id === id); if (next) select(next); }, createWorkspace: () => setCreating(true), refreshWorkspaces: id => load(false, id), updateWorkspace: updated });
+  return children({ workspace, workspaces, selectWorkspace: id => { const next = workspaces.find(item => item.id === id); if (next && next.id !== selected.current) select(next); }, createWorkspace: () => setCreating(true), refreshWorkspaces: id => load(false, id), updateWorkspace: updated });
 }
 
 function OnboardingShell({ user, title, intro, step, children, onSessionEnd }: { user: User; title: string; intro: string; step: number; children: ReactNode; onSessionEnd?: (notice?: string) => void }) {

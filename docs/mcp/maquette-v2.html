@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Autorisations des assistants IA – Circular</title>
+  <link rel="stylesheet" href="../../src/styles.css">
+  <link rel="stylesheet" href="../../src/account-features.css">
+  <link rel="stylesheet" href="../../src/workspace-onboarding.css">
+  <style>
+    .preview { width: min(100% - 32px, 700px); margin: 24px auto 40px; }
+    .preview > section[hidden] { display: none; }
+    .preview nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .preview nav [aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+    .preview .auth-card { margin-inline: auto; }
+    .preview .auth-brand { margin-bottom: 24px; }
+    .preview .integration-card { display: block; }
+    .preview .integration-card h1 { margin: 6px 0 0; font-size: 24px; }
+    .preview .integration-card .breadcrumb { margin: 0; }
+    .preview .integration-card label { display: block; }
+    .preview .integration-card p { font-size: 14px; }
+    .preview .integration-card .mcp-connection p { margin: 0; }
+    .preview .integration-card .settings-notice { margin: 12px 0; color: var(--accent); }
+    .preview .integration-card .settings-notice:empty { margin: 0; }
+    .preview .permissions { margin: 20px 0; }
+    .preview .permissions h2 { margin: 0 0 4px; }
+    .preview .permissions ul { margin: 0; }
+    .preview .permissions li + li { margin-top: 4px; }
+    .preview .write-permissions { margin-top: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-raised); }
+    .preview .dialog { width: min(100% - 32px, 460px); }
+    .preview .dialog-footer { justify-content: flex-end; }
+    @media (max-width: 450px) {
+      .preview .mcp-consent .mcp-actions > .button { width: 100%; justify-content: center; white-space: normal; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Cadrage V2 validé le 24 novembre 2026 dans la conversation. Deux écritures : créer
+       un ticket et ajouter un commentaire. Nouvel accord OAuth par espace, droits existants
+       par projet, autorisations MVP en lecture seule et révocation individuelle. La validation
+       de cette maquette est distincte de celle du cadrage. -->
+  <main class="preview">
+    <nav aria-label="Écrans de la maquette">
+      <button class="button" type="button" data-screen="integrations" aria-current="page">Intégrations</button>
+      <button class="button" type="button" data-screen="consent" data-mode="read">Demande de lecture</button>
+      <button class="button" type="button" data-screen="consent" data-mode="write">Demande d’écriture</button>
+      <button class="button" type="button" data-screen="expired">Demande expirée</button>
+    </nav>
+
+    <section class="integration-card mcp-connections" id="integrations" aria-labelledby="integrations-title">
+      <p class="breadcrumb">Paramètres › Intégrations</p>
+      <h1 id="integrations-title" tabindex="-1">Assistants IA</h1>
+      <p>Ajoutez cette adresse comme connecteur MCP dans votre assistant IA, puis autorisez l’accès depuis Circular.</p>
+      <label for="endpoint">Adresse du serveur MCP</label>
+      <div class="mcp-actions">
+        <input id="endpoint" readonly value="https://circular.example/mcp">
+        <button class="button" type="button" id="copy">Copier l’adresse</button>
+      </div>
+      <p class="settings-notice" id="notice" role="status"></p>
+      <h2>Connexions autorisées</h2>
+      <div id="connections"></div>
+      <p id="empty" hidden>Aucune connexion autorisée.</p>
+    </section>
+
+    <section class="auth-card mcp-consent" id="consent" aria-labelledby="consent-title" hidden>
+      <div class="auth-brand"><span class="brand-mark" aria-hidden="true"></span>Circular</div>
+      <h1 id="consent-title" tabindex="-1"></h1>
+      <p class="auth-intro">Connecté en tant que Camille Martin.</p>
+      <form id="consent-form">
+        <label for="workspace">Espace autorisé</label>
+        <select id="workspace" required>
+          <option value="">Choisir un espace</option>
+          <option>Équipe Mobile</option>
+          <option>Design produit</option>
+        </select>
+        <div class="permissions">
+          <h2>Lecture</h2>
+          <ul>
+            <li>Lister les projets auxquels vous avez accès.</li>
+            <li>Rechercher et consulter les tickets de ces projets.</li>
+          </ul>
+          <div class="write-permissions" id="write-permissions" hidden>
+            <h2>Écriture</h2>
+            <ul>
+              <li>Créer un ticket dans un projet où vous pouvez le faire.</li>
+              <li>Ajouter un commentaire à un ticket que vous pouvez commenter.</li>
+            </ul>
+          </div>
+        </div>
+        <p class="auth-intro">Les résultats sont transmis à Claude. Vous pouvez révoquer cet accès dans Paramètres › Intégrations › Assistants IA.</p>
+        <div class="mcp-actions">
+          <button class="button" id="deny" type="button">Refuser</button>
+          <button class="button primary" id="allow" type="submit" disabled></button>
+        </div>
+      </form>
+    </section>
+
+    <section class="auth-card mcp-consent" id="result" aria-labelledby="result-title" hidden>
+      <h1 id="result-title" tabindex="-1"></h1>
+      <p class="auth-intro" id="result-detail"></p>
+      <button class="button" type="button" data-screen="integrations">Voir les connexions</button>
+    </section>
+
+    <section class="auth-card mcp-consent" id="expired" aria-labelledby="expired-title" hidden>
+      <h1 id="expired-title" tabindex="-1">La demande a expiré</h1>
+      <p class="auth-intro">Relancez la connexion depuis votre assistant IA pour obtenir une nouvelle demande.</p>
+      <button class="button" type="button" data-screen="integrations">Retour aux intégrations</button>
+    </section>
+
+    <dialog class="dialog" id="revoke-dialog" aria-labelledby="revoke-title" aria-describedby="revoke-detail">
+      <form method="dialog">
+        <header class="dialog-header"><h2 id="revoke-title"></h2></header>
+        <div class="form-body"><p class="form-intro" id="revoke-detail"></p></div>
+        <footer class="dialog-footer">
+          <button class="button" value="cancel" autofocus>Annuler</button>
+          <button class="button danger" value="revoke">Révoquer l’accès</button>
+        </footer>
+      </form>
+    </dialog>
+    <template id="connection-template">
+      <div class="mcp-connection">
+        <div><strong>Claude</strong><p></p></div>
+        <button class="button danger" type="button">Révoquer</button>
+      </div>
+    </template>
+  </main>
+  <script>
+    const byId = id => document.getElementById(id);
+    const workspace = byId('workspace');
+    const allow = byId('allow');
+    const dialog = byId('revoke-dialog');
+    const notice = byId('notice');
+    const connections = [{ workspace: 'Équipe Mobile', mode: 'read' }];
+    const scopeLabels = { read: 'Lecture seule', write: 'Lecture et écriture' };
+    let mode = 'read';
+    let selectedConnection;
+
+    function show(screen) {
+      for (const panel of document.querySelectorAll('main > section')) panel.hidden = panel.id !== screen;
+      for (const control of document.querySelectorAll('nav [data-screen]')) {
+        const current = control.dataset.screen === screen && (!control.dataset.mode || control.dataset.mode === mode);
+        if (current) control.setAttribute('aria-current', 'page');
+        else control.removeAttribute('aria-current');
+      }
+      byId(screen).querySelector('h1').focus();
+    }
+
+    function requestConsent(requestedMode) {
+      mode = requestedMode;
+      const write = mode === 'write';
+      byId('consent-title').textContent = write ? 'Autoriser Claude à lire et à écrire dans Circular' : 'Autoriser Claude à lire dans Circular';
+      byId('write-permissions').hidden = !write;
+      allow.textContent = write ? 'Autoriser la lecture et l’écriture' : 'Autoriser la lecture';
+      workspace.value = '';
+      allow.disabled = true;
+      show('consent');
+    }
+
+    function renderConnections() {
+      const rows = connections.map(connection => {
+        const row = byId('connection-template').content.firstElementChild.cloneNode(true);
+        const scope = scopeLabels[connection.mode];
+        row.querySelector('p').textContent = `${connection.workspace} · ${scope}`;
+        const revoke = row.querySelector('button');
+        revoke.setAttribute('aria-label', `Révoquer Claude pour ${connection.workspace} (${scope.toLowerCase()})`);
+        revoke.onclick = () => {
+          selectedConnection = connection;
+          byId('revoke-title').textContent = `Révoquer l’accès de Claude en ${scope.toLowerCase()} ?`;
+          byId('revoke-detail').textContent = `Claude perdra cette autorisation pour l’espace « ${connection.workspace} ».`;
+          dialog.returnValue = 'cancel';
+          dialog.showModal();
+        };
+        return row;
+      });
+      byId('connections').replaceChildren(...rows);
+      byId('empty').hidden = rows.length > 0;
+    }
+
+    function finish(title, detail) {
+      byId('result-title').textContent = title;
+      byId('result-detail').textContent = detail;
+      show('result');
+    }
+
+    for (const control of document.querySelectorAll('[data-screen]')) {
+      control.onclick = () => {
+        if (control.dataset.mode) requestConsent(control.dataset.mode);
+        else show(control.dataset.screen);
+      };
+    }
+    workspace.onchange = () => { allow.disabled = !workspace.value; };
+    byId('deny').onclick = () => finish(mode === 'write' ? 'Accès en écriture refusé' : 'Accès refusé', 'Vous pouvez retourner dans Claude.');
+    byId('consent-form').onsubmit = event => {
+      event.preventDefault();
+      if (!workspace.value) return;
+      const space = workspace.value;
+      if (!connections.some(connection => connection.workspace === space && connection.mode === mode)) {
+        connections.push({ workspace: space, mode });
+        renderConnections();
+      }
+      notice.textContent = '';
+      const title = mode === 'write' ? 'Accès en lecture et en écriture autorisé' : 'Accès en lecture autorisé';
+      finish(title, `Claude a reçu cet accès pour l’espace « ${space} ». Vous pouvez retourner dans Claude.`);
+    };
+    byId('copy').onclick = async () => {
+      const endpoint = byId('endpoint');
+      try {
+        await navigator.clipboard.writeText(endpoint.value);
+        notice.textContent = 'Adresse copiée.';
+      } catch {
+        endpoint.select();
+        notice.textContent = 'Sélectionnez et copiez l’adresse du serveur.';
+      }
+    };
+    dialog.onclose = () => {
+      if (dialog.returnValue !== 'revoke') return;
+      const index = connections.indexOf(selectedConnection);
+      connections.splice(index, 1);
+      renderConnections();
+      notice.textContent = `Accès de Claude en ${scopeLabels[selectedConnection.mode].toLowerCase()} révoqué pour « ${selectedConnection.workspace} ».`;
+      byId('integrations-title').focus();
+    };
+    renderConnections();
+  </script>
+</body>
+</html>

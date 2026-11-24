@@ -50,11 +50,14 @@ class WorkspaceService:
         try:
             with scoped_connection(self.database, self.user_id, self.workspace_id, write=True) as connection:
                 repo = WorkspaceRepository(connection, self.user_id, self.workspace_id)
-                if self.workspace_id is not None and repo.container_role() not in {"owner", "member"}:
-                    raise DomainError(403, "Les invités d’un projet ne peuvent pas créer de projets dans cet espace.")
-                return repo.create_project(data)
+                return self.create_project_in(repo, data)
         except sqlite3.IntegrityError as error:
             raise DomainError(409, "Ce préfixe de projet existe déjà.") from error
+
+    def create_project_in(self, repo: WorkspaceRepository, data: dict) -> dict:
+        if self.workspace_id is not None and repo.container_role() not in {"owner", "member"}:
+            raise DomainError(403, "Les invités d’un projet ne peuvent pas créer de projets dans cet espace.")
+        return repo.create_project(data)
 
     def update_project(self, project_id: int, data: dict) -> dict:
         with scoped_connection(self.database, self.user_id, self.workspace_id, write=True) as connection:
@@ -70,7 +73,7 @@ class WorkspaceService:
             repo.lock_project(project_id)
             project = self.require(repo.project(project_id), "Projet introuvable.")
             self.owner(project)
-            if project["issueCount"]:
+            if connection.execute("SELECT 1 FROM issues WHERE project_id = ? LIMIT 1", (project_id,)).fetchone():
                 raise DomainError(409, "Ce projet contient des tickets. Déplacez-les ou supprimez-les avant de supprimer le projet.")
             repo.delete_project(project_id)
             PreferencesRepository(connection).remove_filter_reference(project_id=project_id)
@@ -86,37 +89,47 @@ class WorkspaceService:
     def create_issue(self, data: dict) -> dict:
         with scoped_connection(self.database, self.user_id, self.workspace_id, write=True) as connection:
             repo = WorkspaceRepository(connection, self.user_id, self.workspace_id)
-            self.validate_references(repo, data)
-            return repo.create_issue(data)
+            return self.create_issue_in(repo, data)
+
+    def create_issue_in(self, repo: WorkspaceRepository, data: dict) -> dict:
+        self.validate_references(repo, data)
+        return repo.create_issue(data)
 
     def update_issue(self, issue_id: int, data: dict) -> dict:
         with scoped_connection(self.database, self.user_id, self.workspace_id, write=True) as connection:
             repo = WorkspaceRepository(connection, self.user_id, self.workspace_id)
             repo.lock_issue(issue_id)
             current = self.require(repo.issue(issue_id), "Ticket introuvable.")
-            before = {**current, "labelIds": [label["id"] for label in current["labels"]]}
-            self.validate_references(repo, {**before, **data})
-            changes = [key for key, value in data.items() if (set(value) != set(before[key]) if key == "labelIds" else value != before[key])]
+            return self.update_issue_in(repo, current, data)
+
+    def update_issue_in(self, repo: WorkspaceRepository, current: dict, data: dict) -> dict:
+        issue_id = current["id"]
+        before = {**current, "labelIds": [label["id"] for label in current["labels"]]}
+        self.validate_references(repo, {**before, **data})
+        changes = [key for key, value in data.items() if (set(value) != set(before[key]) if key == "labelIds" else value != before[key])]
+        if not changes:
+            return current
+        if "isFavorite" in data:
+            repo.set_favorite(issue_id, data["isFavorite"])
+            changes = [key for key in changes if key != "isFavorite"]
             if not changes:
-                return current
-            if "isFavorite" in data:
-                repo.set_favorite(issue_id, data["isFavorite"])
-                changes = [key for key in changes if key != "isFavorite"]
-                if not changes:
-                    return repo.issue(issue_id)
-            updated = repo.update_issue(issue_id, {**current, **data})
-            names = {"title": "titre", "description": "description", "projectId": "projet", "status": "statut", "priority": "priorité", "labelIds": "étiquettes", "dueDate": "échéance", "isFavorite": "favori"}
-            repo.add_activity(issue_id, "updated", "Modification : " + ", ".join(names[key] for key in changes) + ".")
-            return updated
+                return repo.issue(issue_id)
+        updated = repo.update_issue(issue_id, {**current, **data})
+        names = {"title": "titre", "description": "description", "projectId": "projet", "status": "statut", "priority": "priorité", "labelIds": "étiquettes", "dueDate": "échéance", "isFavorite": "favori"}
+        repo.add_activity(issue_id, "updated", "Modification : " + ", ".join(names[key] for key in changes) + ".")
+        return updated
 
     def duplicate_issue(self, issue_id: int) -> dict:
         with scoped_connection(self.database, self.user_id, self.workspace_id, write=True) as connection:
             repo = WorkspaceRepository(connection, self.user_id, self.workspace_id)
             original = self.require(repo.issue(issue_id), "Ticket introuvable.")
-            suffix = " (copie)"
-            data = {**original, "title": original["title"][:240 - len(suffix)] + suffix,
-                    "labelIds": [label["id"] for label in original["labels"]], "isFavorite": False}
-            return repo.create_issue(data)
+            return self.duplicate_issue_in(repo, original)
+
+    def duplicate_issue_in(self, repo: WorkspaceRepository, original: dict) -> dict:
+        suffix = " (copie)"
+        data = {**original, "title": original["title"][:240 - len(suffix)] + suffix,
+                "labelIds": [label["id"] for label in original["labels"]], "isFavorite": False}
+        return repo.create_issue(data)
 
     def activity(self, issue_id: int) -> list[dict]:
         with scoped_connection(self.database, self.user_id, self.workspace_id) as connection:
@@ -175,8 +188,11 @@ class WorkspaceService:
     def create_comment(self, issue_id: int, body: str) -> dict:
         with scoped_connection(self.database, self.user_id, self.workspace_id, write=True) as connection:
             repo = WorkspaceRepository(connection, self.user_id, self.workspace_id)
-            self.require(repo.issue(issue_id), "Ticket introuvable.")
-            return repo.create_comment(issue_id, body)
+            return self.create_comment_in(repo, issue_id, body)
+
+    def create_comment_in(self, repo: WorkspaceRepository, issue_id: int, body: str) -> dict:
+        self.require(repo.issue(issue_id), "Ticket introuvable.")
+        return repo.create_comment(issue_id, body)
 
     def update_comment(self, issue_id: int, comment_id: int, body: str) -> dict:
         with scoped_connection(self.database, self.user_id, self.workspace_id, write=True) as connection:

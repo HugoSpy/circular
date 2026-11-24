@@ -5,6 +5,7 @@ from backend.app.schemas.workspace import ProjectCreate, ProjectUpdate, IssueCre
 from backend.app.schemas.preferences import SortBy, Direction
 from backend.app.schemas.responses import Project, Issue, Label, Comment, Error, Activity
 from backend.app.services.workspace import WorkspaceService, DomainError
+from backend.app.services.ticket_planning import TicketPlanning, get_ticket_planning
 from backend.app.api.auth import require_user
 from backend.app.api.scope import selected_workspace
 
@@ -99,6 +100,11 @@ def duplicate_issue(issue_id: Id, workspace: Service):
 @router.get("/issues/{issue_id}/activity", response_model=list[Activity])
 def activity(issue_id: Id, workspace: Service):
     return workspace.activity(issue_id)
+
+
+@router.get("/issues/{issue_id}/planning", response_model=TicketPlanning)
+def planning(issue_id: Id, workspace: Service):
+    return get_ticket_planning(workspace, issue_id)
 
 
 @router.delete("/issues/{issue_id}", status_code=204)

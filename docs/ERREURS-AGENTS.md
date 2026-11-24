@@ -113,3 +113,66 @@ Format d’une entrée
 - Fait observé — Une première mutation du lien a été interrompue avant son assertion, car `psql` a tenté la connexion sur le socket par défaut.
 - Cause — Le script a fourni la chaîne de connexion complète dans `PGDATABASE`, utilisé pour le nom de la base.
 - Règle vérifiable — Passer la chaîne de connexion à `psql -d` et vérifier que la mutation échoue sur la valeur métier attendue.
+
+### 2026-11-24 — Connecteur MCP de Circular
+
+- Fait observé — La première tentative de résolution du SDK a échoué sur le DNS et l’inventaire hors ligne d’Inspector a échoué sur un cache npm vide. La question de validation a d’abord utilisé un champ non admis par l’outil asynchrone.
+- Cause — Les premières commandes supposaient un réseau ou un cache disponible. Le schéma de l’outil de confirmation asynchrone a été confondu avec celui de l’outil synchrone.
+- Règle vérifiable — Utiliser un cache temporaire et l’accès réseau autorisé pour une nouvelle dépendance. Relire les champs du schéma avant d’envoyer une question ou une demande de validation.
+- Fait observé — Le premier test API attendait 204 à l’acceptation d’une invitation d’espace alors que la route renvoie 200. Le premier parcours navigateur a conservé le jeton CSRF de la fixture après reconnexion. Lors de la révocation, deux rappels concurrents tentaient ensuite de rendre le focus.
+- Cause — Le test a repris le statut des invitations de projet. Les en-têtes globaux Playwright ont survécu au changement de session. Le retour du focus ajouté dans l’écran coexistait avec celui de la boîte de dialogue partagée.
+- Règle vérifiable — Vérifier le statut sur la route exacte et effacer les en-têtes injectés avant une reconnexion. Confier à la boîte de dialogue le retour du focus, avec une cible de repli quand le déclencheur disparaît.
+- Fait observé — Les mutations API ont provoqué les échecs attendus, mais le vérificateur de sortie a rejeté des formes d’assertion valides. Le premier lancement d’Inspector a aussi combiné un catalogue et une URL directe incompatibles, puis deux chemins de documentation supposés étaient absents du paquet.
+- Cause — Le vérificateur cherchait des fragments de sortie trop précis. La commande d’Inspector et les fichiers livrés ont été supposés à partir du README.
+- Règle vérifiable — Reconnaître l’assertion métier et le statut du scénario sous la forme émise par pytest. Lister les fichiers installés et consulter l’aide du binaire avant la recette.
+
+### 2026-11-24 — PR du connecteur MCP vers main
+
+- Fait observé — Deux tests de la première recette sur `main` attendaient exactement cinq migrations et ont échoué avec la migration MCP.
+- Cause — Le checkout de développement avait déjà corrigé ces assertions dans un autre lot. La vérification initiale n’a pas recherché tous les usages directs de `schema_migrations` dans la branche cible.
+- Règle vérifiable — Sur la branche cible, rechercher `rg -n 'schema_migrations' tests` dès l’ajout d’une migration et comparer les versions appliquées aux fichiers SQL versionnés.
+- Fait observé — Le premier script de mutation a supposé que l’insertion dans le registre n’existait qu’une fois.
+- Cause — SQLite et PostgreSQL ont chacun leur propre insertion dans le service de migration.
+- Règle vérifiable — Délimiter la section du moteur visé avant de vérifier l’unicité du motif et d’appliquer la mutation.
+
+### 2026-11-24 — Maquette du consentement MCP V2
+
+- Fait observé — La première capture du consentement affichait encore le panneau des intégrations, alors que les assertions de parcours réussissaient.
+- Cause — La règle de mise en page du panneau primait sur le rendu par défaut de l’attribut `hidden`. Le parcours contrôlait les éléments attendus sans vérifier le nombre de panneaux visibles.
+- Règle vérifiable — Lorsqu’un panneau doté de `hidden` a une règle `display`, définir aussi sa règle de masquage et vérifier dans le navigateur qu’un seul panneau est visible pendant la navigation.
+
+### 2026-11-24 — Implémentation de l’écriture MCP V2
+
+- Fait observé — La première exécution MCP a échoué sur l’ancienne réponse attendue du consentement. Le nouveau champ `write` était déjà renvoyé par l’API.
+- Cause — Le contrat modifié et les assertions exactes de l’ancien parcours ont été lancés dans des états différents de l’édition.
+- Règle vérifiable — Mettre à jour les assertions exactes des parcours existants dans la même étape que le contrat, puis vérifier séparément le comportement des anciens consentements.
+- Fait observé — La première recette PostgreSQL a expiré en attendant un verrou alors que l’écriture concurrente était toujours en cours. La revue a également repéré qu’un verrou exclusif sur le projet pouvait bloquer une création qui avait déjà réservé un numéro de ticket.
+- Cause — Le test relisait les sessions à travers l’instantané statistique d’une transaction ouverte. Le verrou du projet bloquait le verrou de clé étrangère utilisé à l’insertion d’un ticket.
+- Règle vérifiable — Pour une attente de verrou PostgreSQL, observer `pg_locks` avec `pg_blocking_pids`. Vérifier qu’une insertion MCP peut finir pendant qu’une autre transaction tient un verrou de clé étrangère sur le projet.
+
+### 2026-11-24 — Maquette MCP V3
+
+- Fait observé — La première capture étirait chaque entrée de navigation sur ordinateur et plaçait toutes les entrées sur une seule colonne sur mobile. Le parcours automatisé ne détectait aucun débordement horizontal.
+- Cause — Les classes de la maquette reprenaient les noms `sidebar` et `toolbar`. Elles héritaient de la hauteur plein écran et de l’espacement de l’application malgré une structure différente.
+- Règle vérifiable — Pour une structure propre à la maquette, employer des classes distinctes et contrôler la hauteur réelle de la navigation aux tailles vérifiées en plus du débordement horizontal.
+
+### 2026-11-24 — Implémentation MCP V3
+
+- Fait observé — Les premiers parcours ont relevé un catalogue attendu à l’identique, une réponse de recherche Docs sans résultat structuré et une fixture PostgreSQL absente du module V3. Une lecture a aussi ciblé `src/docs/api.tsx`, alors que le fichier est en `.ts`.
+- Cause — L’ancienne assertion portait sur la liste publiée plutôt que les actions autorisées. Les réponses Docs utilisaient un dictionnaire générique. L’import de la fixture MCP n’enregistrait pas sa dépendance PostgreSQL dans le nouveau module. La recherche a supposé des extensions homogènes.
+- Règle vérifiable — Tester les portées sur un appel réel, déclarer des modèles de résultat MCP, importer les fixtures transitives utilisées et lister les chemins avec `rg --files` avant une recherche sur des modules mixtes.
+- Fait observé — Le premier passage Playwright a placé le premier ticket à 596 px à cause du bouton de partage ajouté à la barre d’actions mobile.
+- Cause — Le libellé du bouton occupait assez de largeur pour forcer une seconde rangée.
+- Règle vérifiable — Vérifier la position du premier ticket sous 550 px à 390 px avec le scénario d’ergonomie existant. Conserver un nom accessible sur les commandes compactes.
+
+### 2026-11-24 — Préparation de la pull request MCP V3
+
+- Fait observé — Les premiers tests API et Playwright de la branche isolée ont échoué faute du PDF de démonstration utilisé par les tests de pièces jointes Docs.
+- Cause — La sélection des dépendances de la branche a écarté le répertoire des maquettes Docs sans repérer les deux références à ce fichier.
+- Règle vérifiable — Avant de sélectionner les fichiers d’un lot depuis un checkout mixte, rechercher dans les tests les chemins vers les données de test et ajouter les fichiers référencés. Exécuter les suites sur la branche ainsi préparée.
+- Fait observé — La première sélection des fichiers de verrouillage Docs rétrogradait `certifi`, dont la version avait été relevée sur `main`. Git signalait aussi comme espaces de fin de ligne les octets prescrits par le format dans la table du PDF de test.
+- Cause — La sélection reprenait les verrous du checkout local tels quels. Git traitait le PDF de démonstration comme du texte.
+- Règle vérifiable — Comparer les versions verrouillées à la branche cible et garder les mises à jour sans rapport. Déclarer le PDF comme binaire dans les attributs Git et relancer `git diff --check`.
+- Fait observé — L’inspection du premier commit isolé a repéré deux liens symboliques vers les dépendances locales.
+- Cause — Une préparation de branche avait ajouté des chemins de travail au lot des fichiers à publier.
+- Règle vérifiable — Avant tout envoi, inspecter `git ls-tree -r HEAD` pour les liens symboliques et comparer la liste complète des fichiers à la branche cible. Retirer du commit l’environnement Python et les modules Node.
