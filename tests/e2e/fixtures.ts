@@ -132,7 +132,11 @@ export const test = base.extend<Fixtures>({
     const registered = await page.request.post(`${server.url}/api/auth/register`, { data: {
       username: 'Utilisateur de test', email: 'browser.test@epita.fr', password: 'Browser-test-passphrase-2026!',
     } });
-    expect(registered.status()).toBe(201);
+    expect(registered.status()).toBe(202);
+    const verification = await page.request.get(`${server.url}/api/test/email-verification?email=browser.test%40epita.fr`);
+    expect(verification.ok()).toBeTruthy();
+    const confirmed = await page.request.post(`${server.url}/api/auth/verification/confirm`, { data: await verification.json() });
+    expect(confirmed.status()).toBe(200);
     const workspace = await createEmptyWorkspace(page, server.url, 'browser-test');
     // The context's API request client shares the session cookie and these headers;
     // direct API setup in existing tests uses the same CSRF checks as the browser.

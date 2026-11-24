@@ -23,7 +23,7 @@ class SharingRepository:
         return members
 
     def recipient(self, email: str) -> dict | None:
-        row = self.connection.execute("SELECT id FROM users WHERE email = ?", (email.casefold().strip(),)).fetchone()
+        row = self.connection.execute("SELECT id, email_verified FROM users WHERE email = ?", (email.casefold().strip(),)).fetchone()
         return dict(row) if row else None
 
     def invitations(self, project_id: int) -> list[dict]:
@@ -38,8 +38,8 @@ class SharingRepository:
     def inbox(self, user_id: int) -> list[dict]:
         return [dict(row) for row in self.connection.execute("""SELECT i.id, p.id AS projectId, p.name AS projectName, p.workspace_id AS workspaceId,
             u.username AS inviterName, i.created_at AS createdAt FROM project_invitations i
-            JOIN projects p ON p.id = i.project_id JOIN users u ON u.id = i.inviter_id
-            WHERE i.user_id = ? ORDER BY i.id""", (user_id,))]
+            JOIN projects p ON p.id = i.project_id JOIN users u ON u.id = i.inviter_id JOIN users recipient ON recipient.id = i.user_id
+            WHERE i.user_id = ? AND recipient.email_verified = 1 ORDER BY i.id""", (user_id,))]
 
     def invitation(self, invitation_id: int, user_id: int, *, lock: bool = True) -> dict | None:
         locking = " FOR UPDATE" if lock and getattr(self.connection, "dialect", "sqlite") == "postgresql" else ""

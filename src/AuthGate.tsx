@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { ArrowRight, LockKey, SignOut } from '@phosphor-icons/react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ArrowRight, CheckCircle, EnvelopeSimple, LockKey, SignOut } from '@phosphor-icons/react';
 import { api, ApiError, setCsrfToken, setWorkspaceId } from './api';
 import type { AuthSession, User } from './types';
 import { Dialog, ErrorMessage, message } from './ui';
@@ -11,6 +11,11 @@ export function AuthGate({ children, mcpLogin = false }: { mcpLogin?: boolean; c
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [attempt, setAttempt] = useState(0);
+  const [verification, setVerification] = useState<{ phase: 'loading' | 'confirmed' | 'invalid'; session?: AuthSession } | null>(null);
+  const [verificationError, setVerificationError] = useState('');
+  const [resending, setResending] = useState(false);
+  const [resendNotice, setResendNotice] = useState('');
+  const confirmationStarted = useRef(false);
   function authenticated(value: AuthSession) {
     setCsrfToken(value.csrfToken);
     setSession(value);
@@ -34,19 +39,45 @@ export function AuthGate({ children, mcpLogin = false }: { mcpLogin?: boolean; c
     return () => { active = false; };
   }, [attempt]);
   useEffect(() => {
+    let active = true;
+    const confirmFromFragment = () => {
+      const token = new URLSearchParams(location.hash.slice(1)).get('verification');
+      if (!token || confirmationStarted.current) return;
+      confirmationStarted.current = true;
+      history.replaceState(null, '', location.pathname + location.search);
+      setVerificationError('');
+      setVerification({ phase: 'loading' });
+      api.confirmVerification(token).then(value => {
+        if (active) setVerification({ phase: 'confirmed', session: value });
+        confirmationStarted.current = false;
+      }).catch(error => {
+        if (active) {
+          setVerificationError(message(error));
+          setVerification({ phase: 'invalid' });
+        }
+        confirmationStarted.current = false;
+      });
+    };
+    confirmFromFragment();
+    window.addEventListener('hashchange', confirmFromFragment);
+    return () => { active = false; window.removeEventListener('hashchange', confirmFromFragment); };
+  }, []);
+  useEffect(() => {
     const expired = () => endSession('Votre session a expiré. Reconnectez-vous pour retrouver vos données enregistrées.');
     window.addEventListener('circular:session-expired', expired);
     return () => window.removeEventListener('circular:session-expired', expired);
   }, []);
+  if (verification?.phase === 'loading') return <main className="auth-shell"><div className="auth-card"><Brand /><p role="status">Confirmation de votre adresse…</p></div></main>;
+  if (verification?.phase === 'confirmed' && verification.session) return <main className="auth-shell"><div className="auth-card"><Brand /><CheckCircle size={34} aria-hidden="true" /><p className="auth-eyebrow">ADRESSE CONFIRMÉE</p><h1>Votre compte est prêt</h1><p className="auth-intro">Votre adresse e-mail est confirmée. Vous pouvez maintenant ouvrir votre espace Circular.</p><button className="button primary auth-submit" onClick={() => { const value = verification.session!; setVerification(null); authenticated(value); }}>Continuer vers mon espace<ArrowRight size={17} aria-hidden="true" /></button></div></main>;
   if (loading) return <main className="auth-shell"><div className="auth-card"><Brand /><p role="status">Ouverture de votre espace…</p></div></main>;
   if (error) return <main className="auth-shell"><div className="auth-card"><Brand /><h1>Connexion au serveur</h1><ErrorMessage>{error}</ErrorMessage><button className="button primary" onClick={() => setAttempt(value => value + 1)}>Réessayer</button></div></main>;
-  if (session) return children(session.user, endSession, user => setSession(current => current ? { ...current, user } : current));
-  return <LoginForm mcpLogin={mcpLogin} notice={notice} onAuthenticated={authenticated} />;
+  if (session) return <>{children(session.user, endSession, user => setSession(current => current ? { ...current, user } : current))}{!session.emailVerified && <div className="verification-banner" role="status"><EnvelopeSimple size={18} aria-hidden="true" /><span>Confirmez votre adresse e-mail pour accepter les invitations.</span><button className="button subtle" disabled={resending} onClick={() => { setResending(true); setResendNotice(''); api.resendCurrentVerification().then(result => setResendNotice(result.message)).catch(error => setResendNotice(message(error))).finally(() => setResending(false)); }}>{resending ? 'Envoi…' : 'Renvoyer le lien'}</button>{resendNotice && <span>{resendNotice}</span>}</div>}</>;
+  return <LoginForm mcpLogin={mcpLogin} notice={notice} verificationError={verificationError} onAuthenticated={authenticated} />;
 }
 
 function Brand() { return <div className="auth-brand"><span className="brand-mark" aria-hidden="true" /><span>Circular</span></div>; }
 
-function LoginForm({ notice, onAuthenticated, mcpLogin }: { mcpLogin: boolean; notice: string; onAuthenticated: (session: AuthSession) => void }) {
+function LoginForm({ notice, verificationError, onAuthenticated, mcpLogin }: { mcpLogin: boolean; notice: string; verificationError: string; onAuthenticated: (session: AuthSession) => void }) {
   const [register, setRegister] = useState(false);
   const [identifier, setIdentifier] = useState('');
   const [username, setUsername] = useState('');
@@ -55,24 +86,33 @@ function LoginForm({ notice, onAuthenticated, mcpLogin }: { mcpLogin: boolean; n
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
+  const [resendNotice, setResendNotice] = useState('');
   async function submit() {
     if (pending) return;
     setError('');
     if (register && password !== confirm) { setError('Les deux mots de passe doivent être identiques.'); return; }
     setPending(true);
-    try { onAuthenticated(register ? await api.register(username.trim(), email.trim(), password) : await api.login(identifier.trim(), password)); }
+    try {
+      if (register) {
+        await api.register(username.trim(), email.trim(), password);
+        setSubmittedEmail(email.trim().toLowerCase());
+      } else onAuthenticated(await api.login(identifier.trim(), password));
+    }
     catch (error) { setError(message(error)); }
     finally { setPending(false); }
   }
   function switchMode() { setRegister(value => !value); setPassword(''); setConfirm(''); setError(''); }
+  if (submittedEmail) return <main className="auth-shell"><div className="auth-card"><Brand /><EnvelopeSimple size={34} aria-hidden="true" /><p className="auth-eyebrow">VÉRIFIEZ VOTRE BOÎTE DE RÉCEPTION</p><h1>Presque terminé</h1><p className="auth-intro">Si cette adresse peut être utilisée, un lien de confirmation vient d’y être envoyé. Si vous avez déjà un compte, connectez-vous.</p><button className="button primary auth-submit" disabled={pending} onClick={async () => { setPending(true); setResendNotice(''); try { const result = await api.resendVerification(submittedEmail); setResendNotice(result.message); } catch (error) { setResendNotice(message(error)); } finally { setPending(false); } }}>{pending ? 'Envoi…' : 'Renvoyer le lien de confirmation'}<ArrowRight size={17} aria-hidden="true" /></button>{resendNotice && <p className="settings-notice" role="status">{resendNotice}</p>}<button className="button subtle" onClick={() => { setSubmittedEmail(''); setRegister(false); setError(''); }}>Revenir à la connexion</button></div></main>;
   return <main className="auth-shell"><div className="auth-card"><Brand /><p className="auth-eyebrow">VOTRE ESPACE DE PROJET</p><h1>{register ? 'Créer un compte' : mcpLogin ? 'Connectez-vous à Circular' : 'Se connecter'}</h1><p className="auth-intro">{register ? 'Créez vos projets privés et invitez les personnes avec qui vous travaillez.' : mcpLogin ? 'Connectez-vous pour examiner la demande d’accès de votre assistant.' : 'Retrouvez vos projets, vos tickets et votre équipe.'}</p>
     {notice && <p className="settings-notice" role="status">{notice}</p>}
+    {verificationError && <ErrorMessage>{verificationError} Recommencez l’inscription ou connectez-vous.</ErrorMessage>}
     <form aria-busy={pending} onSubmit={event => { event.preventDefault(); void submit(); }}><fieldset disabled={pending}><ErrorMessage>{error}</ErrorMessage>
-      {register ? <><label>Pseudo<input autoComplete="username" required minLength={2} maxLength={40} value={username} onChange={event => setUsername(event.target.value)} /></label><label>Adresse e-mail EPITA<input type="email" autoComplete="email" required maxLength={254} pattern="[^\s@]+@epita\.fr" value={email} onChange={event => setEmail(event.target.value)} placeholder="prenom.nom@epita.fr" /></label></> : <label>Pseudo ou adresse e-mail<input autoComplete="username" required maxLength={254} value={identifier} onChange={event => setIdentifier(event.target.value)} autoFocus /></label>}
+      {register ? <><label>Pseudo<input autoComplete="username" required minLength={2} maxLength={40} value={username} onChange={event => setUsername(event.target.value)} /></label><label>Adresse e-mail EPITA<input type="email" autoComplete="email" required maxLength={254} value={email} onChange={event => setEmail(event.target.value)} placeholder="prenom.nom@epita.fr" /></label></> : <label>Pseudo ou adresse e-mail<input autoComplete="username" required maxLength={254} value={identifier} onChange={event => setIdentifier(event.target.value)} autoFocus /></label>}
       <label>Mot de passe<input type="password" autoComplete={register ? 'new-password' : 'current-password'} required minLength={register ? 12 : undefined} maxLength={128} value={password} onChange={event => setPassword(event.target.value)} aria-describedby={register ? 'password-help' : undefined} /></label>
       {register && <><p id="password-help" className="field-hint">12 à 128 caractères. Choisissez un mot de passe propre à Circular.</p><label>Confirmer le mot de passe<input type="password" autoComplete="new-password" required minLength={12} maxLength={128} value={confirm} onChange={event => setConfirm(event.target.value)} /></label></>}
       <button className="button primary auth-submit" type="submit">{pending ? 'Connexion…' : register ? 'Créer mon compte' : 'Se connecter'}<ArrowRight size={17} aria-hidden="true" /></button>
-    </fieldset></form><div className="auth-switch"><span>{register ? 'Vous avez déjà un compte ?' : 'Première visite ?'}</span><button className="button subtle" disabled={pending} onClick={switchMode}>{register ? 'Se connecter à mon compte' : 'Créer un compte'}</button></div><p className="auth-footnote">{register ? 'Réservé aux adresses @epita.fr. Aucun e-mail de vérification n’est envoyé pour le moment.' : 'Mot de passe oublié ? Contactez l’administrateur du service pour rétablir votre accès.'}</p>
+    </fieldset></form><div className="auth-switch"><span>{register ? 'Vous avez déjà un compte ?' : 'Première visite ?'}</span><button className="button subtle" disabled={pending} onClick={switchMode}>{register ? 'Se connecter à mon compte' : 'Créer un compte'}</button></div><p className="auth-footnote">{register ? 'Réservé aux adresses @epita.fr. La confirmation de l’adresse active le compte.' : 'Mot de passe oublié ? Contactez l’administrateur du service pour rétablir votre accès.'}</p>
   </div></main>;
 }
 

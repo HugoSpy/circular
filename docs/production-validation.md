@@ -2,6 +2,8 @@
 
 Rapport historique de la version 2.0. La [validation des espaces et du correctif Docker 2.1](workspace-validation.md) décrit la livraison suivante ; les résultats ci-dessous concernent les images indiquées ici.
 
+Mise à jour du 21 novembre 2026 : la vérification d’adresse par SMTP a été ajoutée après cette validation historique. Les résultats ci-dessous ne couvrent pas cette évolution ; voir [son périmètre et ses vérifications](auth-email-verification-scope.md).
+
 Vérifications du **28 octobre 2026**, sur Windows avec Docker Desktop exécutant des conteneurs Linux. Les bases de test, comptes et projets utilisés sont fictifs. Aucune connexion au réseau de production de l’école, aucune publication de registre et aucune modification de la base SQLite utilisateur n’ont été effectuées.
 
 ## Résultats Docker réellement exécutés
@@ -77,6 +79,6 @@ Les résultats des versions locales précédentes restent dans [validation.md](v
 - La sauvegarde a été restaurée dans une nouvelle base de test et son contenu comparé. La rotation distante, le chiffrement, la rétention et la reprise complète sur un autre serveur restent à intégrer aux procédures de l’école.
 - L’audit automatique npm du build a signalé zéro vulnérabilité. Le scan de l’image OS/Python n’a **pas** été exécuté localement ; le workflow GitHub configure Trivy à chaque push sur `main`. Son résultat pour chaque commit est consultable dans [GitHub Actions](https://github.com/HugoSpy/circular/actions/workflows/container.yml) et ne doit pas être déduit des seuls tests fonctionnels ci-dessus.
 - Pas de test de charge, de haute disponibilité, de panne disque, de montée de version PostgreSQL ou de déploiement sur plusieurs machines. Les tests de concurrence portent sur les transactions ciblées, pas sur un dimensionnement global.
-- L’adresse `@epita.fr` est validée syntaxiquement ; sa possession n’est pas prouvée. Aucun SSO, SMTP, email de récupération ou collaboration temps réel n’est livré.
+- À la date de cette validation (28 octobre 2026), l’adresse `@epita.fr` était validée syntaxiquement sans preuve de possession. Aucun SSO, email de récupération ou collaboration temps réel n’était livré. La confirmation par SMTP a été ajoutée le 21 novembre 2026 ; voir la note de mise à jour en tête de ce rapport.
 
 Les commandes de mise en service, de raccordement à une base externe, d’import, de sauvegarde, de restauration et de retour arrière figurent dans [deployment.md](deployment.md).

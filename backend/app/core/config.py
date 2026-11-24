@@ -31,6 +31,37 @@ def public_url() -> str:
     return value
 
 
+def verification_url(token: str) -> str:
+    from urllib.parse import urlencode
+
+    origin = public_url() or "http://127.0.0.1:5173"
+    return f"{origin}/#{urlencode({'verification': token})}"
+
+
+def email_config() -> dict[str, str | int]:
+    host = os.environ.get("CIRCULAR_SMTP_HOST", "").strip()
+    sender = os.environ.get("CIRCULAR_EMAIL_FROM", "").strip()
+    username = os.environ.get("CIRCULAR_SMTP_USERNAME", "").strip()
+    password = secret_value("CIRCULAR_SMTP_PASSWORD")
+    if production() and (not host or not sender or not username):
+        raise ValueError("CIRCULAR_SMTP_HOST, CIRCULAR_SMTP_USERNAME et CIRCULAR_EMAIL_FROM sont requis pour la validation des adresses en production.")
+    try:
+        port = int(os.environ.get("CIRCULAR_SMTP_PORT", "587"))
+    except ValueError as error:
+        raise ValueError("CIRCULAR_SMTP_PORT doit être un nombre.") from error
+    if not 1 <= port <= 65535:
+        raise ValueError("CIRCULAR_SMTP_PORT doit être compris entre 1 et 65535.")
+    if bool(username) != bool(password):
+        raise ValueError("CIRCULAR_SMTP_USERNAME et CIRCULAR_SMTP_PASSWORD doivent être configurés ensemble.")
+    return {
+        "host": host,
+        "port": port,
+        "username": username,
+        "password": password,
+        "sender": sender,
+    }
+
+
 def database_target() -> Path | str:
     value = secret_value("CIRCULAR_DATABASE_URL")
     if value:

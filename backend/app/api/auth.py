@@ -3,7 +3,7 @@ import os
 import secrets
 from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response
-from backend.app.schemas.auth import ChangePassword, Login, Register, SessionResponse, ProfileUpdate, PublicUser
+from backend.app.schemas.auth import ChangePassword, Login, Register, SessionResponse, ProfileUpdate, PublicUser, VerificationRequest, VerificationToken, RegistrationAccepted
 from backend.app.services.auth import AuthService
 from backend.app.services.workspace import DomainError
 
@@ -51,10 +51,25 @@ def me(request: Request):
     return session(request)
 
 
-@router.post("/register", status_code=201, response_model=SessionResponse)
-def register(data: Register, request: Request, response: Response):
+@router.post("/register", status_code=202, response_model=RegistrationAccepted)
+def register(data: Register, request: Request):
+    return service(request).register(data.email, data.username, data.password, peer(request))
+
+
+@router.post("/verification/resend", status_code=202, response_model=RegistrationAccepted)
+def resend_verification(data: VerificationRequest, request: Request):
+    return service(request).request_verification(data.email, peer(request))
+
+
+@router.post("/verification/resend-current", status_code=202, response_model=RegistrationAccepted)
+def resend_current_verification(request: Request, user: User):
+    return service(request).request_current_verification(user["id"], peer(request))
+
+
+@router.post("/verification/confirm", response_model=SessionResponse)
+def confirm_verification(data: VerificationToken, request: Request, response: Response):
     auth = service(request)
-    result, token = auth.register(data.email, data.username, data.password, peer(request))
+    result, token = auth.verify_email(data.token, peer(request))
     if previous := request.cookies.get(COOKIE_NAME):
         auth.logout(previous)
     set_cookie(response, token, auth.session_ttl)

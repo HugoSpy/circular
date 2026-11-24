@@ -1,6 +1,7 @@
 """Application factory, error translation, middleware and local frontend."""
 from pathlib import Path
 import logging
+import os
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -11,7 +12,7 @@ from backend.app.api.sharing import router as sharing_router
 from backend.app.api.spaces import router as spaces_router
 from backend.app.api.frontend import mount_frontend
 from backend.app.api.mcp import mount_mcp
-from backend.app.core.config import ROOT, database_target, public_url
+from backend.app.core.config import ROOT, database_target, email_config, public_url
 from backend.app.core.security import LocalSecurityMiddleware
 from backend.app.db.session import Database
 from backend.app.services.workspace import DomainError, WorkspaceService
@@ -22,8 +23,22 @@ from backend.app.services.auth import AuthService
 def create_app(db_path: Path | str | None = None, dist_path: Path | str | None = None) -> FastAPI:
     app = FastAPI(title="Circular", docs_url=None, redoc_url=None, openapi_url="/api/openapi.json")
     origin = public_url()
+    email_config()
     app.state.database = Database(db_path or database_target())
     app.state.auth = AuthService(app.state.database)
+    if os.environ.get("CIRCULAR_ENV") == "test":
+        app.state.test_email_outbox = {}
+        app.state.auth.email_sender = lambda email, token: app.state.test_email_outbox.__setitem__(email, token)
+
+        @app.get("/api/test/email-verification")
+        def test_email_verification(request: Request, email: str):
+            peer = request.client.host if request.client else ""
+            if peer not in {"127.0.0.1", "::1", "testclient"}:
+                return JSONResponse({"error": "Introuvable."}, status_code=404)
+            token = app.state.test_email_outbox.get(email.strip().lower())
+            if not token:
+                return JSONResponse({"error": "Introuvable."}, status_code=404)
+            return {"token": token}
     app.state.workspace = WorkspaceService(app.state.database)
     app.state.preferences = PreferencesService(app.state.database)
     app.add_middleware(LocalSecurityMiddleware)

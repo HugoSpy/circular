@@ -12,6 +12,7 @@ from backend.app.schemas.preferences import Settings
 from backend.claim_legacy import claim_legacy
 from backend.import_sqlite import import_sqlite
 from tests.test_postgres import postgres_url  # noqa: F401; isolated schema fixture
+from tests.helpers import register_verified
 
 ORIGIN = "http://127.0.0.1:4310"
 PASSWORD = "Une phrase de test import espaces 42!"
@@ -26,9 +27,7 @@ def login(client, username):
 
 
 def register(client, username):
-    result = client.post("/api/auth/register", json={"username": username, "email": username.lower() + "@epita.fr", "password": PASSWORD})
-    assert result.status_code == 201, result.text
-    client.headers["X-CSRF-Token"] = result.json()["csrfToken"]
+    result = register_verified(client, username.lower() + "@epita.fr", username, PASSWORD)
     return result.json()["user"]
 
 

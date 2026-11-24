@@ -14,6 +14,15 @@ export class WorkspacePage {
     await this.page.getByLabel('Mot de passe', { exact: true }).fill(accountPassword);
     await this.page.getByLabel('Confirmer le mot de passe', { exact: true }).fill(accountPassword);
     await this.page.getByRole('button', { name: 'Créer mon compte', exact: true }).click();
+    await expect(this.page.getByRole('heading', { name: 'Presque terminé', exact: true })).toBeVisible();
+    const email = `${username.toLowerCase()}@epita.fr`;
+    const origin = new URL(this.page.url()).origin;
+    const verification = await this.page.request.get(`${origin}/api/test/email-verification?email=${encodeURIComponent(email)}`);
+    expect(verification.ok()).toBeTruthy();
+    const { token } = await verification.json() as { token: string };
+    await this.page.goto(`${origin}/#verification=${encodeURIComponent(token)}`);
+    await expect(this.page.getByRole('heading', { name: 'Votre compte est prêt', exact: true })).toBeVisible();
+    await this.page.getByRole('button', { name: 'Continuer vers mon espace', exact: true }).click();
     await expect(this.page.getByRole('heading', { name: 'Créer votre espace', exact: true })).toBeVisible();
   }
 
