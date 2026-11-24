@@ -35,7 +35,7 @@ test('modifier et commenter ; les données et suppressions survivent au redémar
   expect(await response.json()).toEqual([]);
 });
 
-test('glisser un ticket entre statuts puis retrouver le déplacement après actualisation', async ({ app, page }) => {
+test('changer le statut d’un ticket par glisser-déposer et au clavier, puis le retrouver après actualisation', async ({ app, page }) => {
   await app.createProject('Orbites', 'ORB');
   await app.createTicket({ title: 'Calibrer le télescope', status: 'todo' });
   await app.board();
@@ -48,14 +48,20 @@ test('glisser un ticket entre statuts puis retrouver le déplacement après actu
   await page.reload();
   await app.board();
   await expect(app.column('done').getByText('Calibrer le télescope', { exact: true })).toBeVisible();
-  await app.card('Calibrer le télescope').getByRole('combobox', { name: 'Statut de ORB-1', exact: true }).focus();
+  const status = app.card('Calibrer le télescope').getByRole('combobox', { name: 'Statut de ORB-1', exact: true });
+  await status.focus();
+  await expect(status).toBeFocused();
   const keyboardMoved = page.waitForResponse(response => /\/api\/issues\/\d+$/.test(response.url()) && response.request().method() === 'PATCH');
-  await page.keyboard.press('ArrowUp');
+  // La recherche par initiale du sélecteur natif fonctionne dans Chrome sans interface.
+  await page.keyboard.press('e');
   expect((await keyboardMoved).ok()).toBeTruthy();
-  await expect(app.column('in_review').getByText('Calibrer le télescope', { exact: true })).toBeVisible();
+  await expect(app.column('in_progress').getByText('Calibrer le télescope', { exact: true })).toBeVisible();
+  await page.reload();
+  await app.board();
+  await expect(app.column('in_progress').getByText('Calibrer le télescope', { exact: true })).toBeVisible();
   await app.list();
   await app.openTicket('Calibrer le télescope');
-  await expect(app.detail.getByRole('combobox', { name: 'Statut', exact: true })).toHaveValue('in_review');
+  await expect(app.detail.getByRole('combobox', { name: 'Statut', exact: true })).toHaveValue('in_progress');
 });
 
 test('recherche et filtres projet, statut, priorité se cumulent', async ({ app, page }) => {
