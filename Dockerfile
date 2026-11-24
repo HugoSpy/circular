@@ -13,6 +13,7 @@ FROM python:3.12-alpine3.24@sha256:5789aa194f757888f41fa3d48e14b6feaa1b57c0af0b5
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     CIRCULAR_HOST=0.0.0.0 CIRCULAR_PORT=4310 CIRCULAR_ENV=production
 WORKDIR /app
+RUN apk add --no-cache --upgrade "krb5-libs>=1.22.3-r0"
 COPY requirements.lock ./
 RUN --mount=type=secret,id=build_ca \
     if [ -f /run/secrets/build_ca ]; then export PIP_CERT=/run/secrets/build_ca; fi; \
