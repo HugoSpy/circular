@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Circular — validation de l’adresse e-mail</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #121315; --panel: #191a1e; --raised: #222328; --line: #303138;
+      --control: #51535c; --text: #f1f1f3; --muted: #a5a7af;
+      --accent: #f2cf63; --accent-soft: #332e1e; --success: #9ad5b0;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--text); background: var(--bg); }
+    header { padding: 28px clamp(20px, 5vw, 72px) 20px; border-bottom: 1px solid var(--line); }
+    header p { margin: 0 0 6px; color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(22px, 3vw, 30px); letter-spacing: -.035em; }
+    header small { display: block; margin-top: 8px; color: var(--muted); }
+    main { width: min(1440px, 100%); margin: auto; padding: 28px clamp(16px, 3vw, 40px) 48px; }
+    .flow { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 26px; color: var(--muted); font-size: 12px; }
+    .flow b { color: var(--text); font-weight: 550; }
+    .flow span { color: #747680; }
+    .screens { display: grid; grid-template-columns: repeat(4, minmax(240px, 1fr)); gap: 16px; align-items: start; }
+    figure { min-width: 0; margin: 0; }
+    figcaption { min-height: 44px; color: var(--muted); font-size: 11px; font-weight: 650; letter-spacing: .07em; text-transform: uppercase; }
+    .card { min-height: 520px; padding: 30px 26px 24px; border: 1px solid #393a42; border-radius: 12px; background: var(--panel); box-shadow: 0 18px 60px #0004; }
+    .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 30px; font-size: 21px; font-weight: 700; letter-spacing: -.04em; }
+    .mark { width: 24px; height: 24px; border: 5px solid var(--accent); border-right-color: transparent; border-radius: 50%; transform: rotate(-35deg); }
+    .eyebrow { margin: 0 0 8px; color: var(--accent); font-size: 10px; letter-spacing: .12em; font-weight: 700; }
+    h2 { margin: 0 0 10px; font-size: 25px; line-height: 1.2; letter-spacing: -.04em; }
+    .intro { margin: 0 0 22px; color: var(--muted); font-size: 13px; }
+    label { display: block; margin: 0 0 14px; color: #d1d2d8; font-size: 12px; font-weight: 550; }
+    input { display: block; width: 100%; min-height: 40px; margin-top: 6px; padding: 9px 10px; border: 1px solid var(--control); border-radius: 6px; color: var(--text); background: #141519; font: inherit; font-weight: 400; }
+    input:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .hint { margin: -7px 0 15px; color: var(--muted); font-size: 11px; }
+    button, .button { display: flex; width: 100%; min-height: 42px; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding: 10px 13px; border: 1px solid var(--accent); border-radius: 6px; color: #211e13; background: var(--accent); font: inherit; font-weight: 650; text-decoration: none; }
+    .secondary { justify-content: center; margin-top: 10px; border-color: var(--control); color: var(--text); background: transparent; }
+    .foot { margin: 18px 0 0; color: var(--muted); font-size: 11px; }
+    .notice { margin: 20px 0; padding: 12px; border: 1px solid #6d5a2f; border-radius: 6px; color: #efdfa9; background: var(--accent-soft); font-size: 12px; }
+    .symbol { display: grid; width: 46px; height: 46px; place-items: center; margin: 2px 0 22px; border: 1px solid #4d4938; border-radius: 50%; color: var(--accent); background: var(--accent-soft); font-size: 23px; }
+    .symbol.success { border-color: #345442; color: var(--success); background: #1c2b23; }
+    .status { color: var(--success); font-size: 12px; font-weight: 650; }
+    .device-note { margin: 26px 0 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: 7px; color: var(--muted); background: #17181b; font-size: 12px; }
+    @media (max-width: 1100px) { .screens { grid-template-columns: repeat(2, minmax(250px, 1fr)); } }
+    @media (max-width: 620px) {
+      header { padding-top: 20px; }
+      .flow { justify-content: flex-start; flex-wrap: wrap; line-height: 1.8; }
+      .screens { grid-template-columns: 1fr; gap: 24px; }
+      figcaption { min-height: 28px; }
+      .card { min-height: 0; padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p>Maquette · authentification</p>
+    <h1>Confirmer l’adresse avant les invitations</h1>
+    <small>Lot de correction — inscription, réponse neutre, confirmation et compte existant non vérifié.</small>
+  </header>
+  <main>
+    <nav class="flow" aria-label="Parcours">
+      <b>Créer un compte</b><span>→</span><b>Consulter le message</b><span>→</span><b>Confirmer l’adresse</b><span>→</span><b>Accéder à Circular</b>
+    </nav>
+    <section class="screens" aria-label="Écrans et états">
+      <figure>
+        <figcaption>1 · Inscription</figcaption>
+        <article class="card">
+          <div class="brand"><span class="mark" aria-hidden="true"></span><span>Circular</span></div>
+          <p class="eyebrow">VOTRE ESPACE DE PROJET</p>
+          <h2>Créer un compte</h2>
+          <p class="intro">Confirmez votre adresse EPITA pour activer le compte et accepter les invitations qui vous sont destinées.</p>
+          <label>Pseudo<input value="Camille Martin" aria-label="Pseudo"></label>
+          <label>Adresse e-mail EPITA<input value="prenom.nom@epita.fr" aria-label="Adresse e-mail EPITA"></label>
+          <label>Mot de passe<input type="password" value="Circular-demo-42!" aria-label="Mot de passe"></label>
+          <p class="hint">12 à 128 caractères.</p>
+          <label>Confirmer le mot de passe<input type="password" value="Circular-demo-42!" aria-label="Confirmer le mot de passe"></label>
+          <a class="button" href="#confirmation">Créer mon compte <span aria-hidden="true">→</span></a>
+          <p class="foot">Vous avez déjà un compte ? <u>Se connecter</u></p>
+        </article>
+      </figure>
+      <figure>
+        <figcaption>2 · Réponse identique pour tous</figcaption>
+        <article class="card" id="confirmation">
+          <div class="brand"><span class="mark" aria-hidden="true"></span><span>Circular</span></div>
+          <div class="symbol" aria-hidden="true">✉</div>
+          <p class="eyebrow">ÉTAPE SUIVANTE</p>
+          <h2>Vérifiez votre messagerie</h2>
+          <p class="intro">Si cette adresse peut être utilisée pour créer un compte, un lien de confirmation vient d’y être envoyé.</p>
+          <div class="notice">La réponse ne révèle pas si un compte existe déjà. Si vous avez déjà un compte, vous pouvez vous connecter.</div>
+          <button type="button">Renvoyer le lien <span aria-hidden="true">↻</span></button>
+          <a class="button secondary" href="#connexion">Retour à la connexion</a>
+          <p class="foot">Le lien expire après 30 minutes. Vous pourrez demander un nouvel envoi.</p>
+        </article>
+      </figure>
+      <figure>
+        <figcaption>3 · Lien de confirmation valide</figcaption>
+        <article class="card">
+          <div class="brand"><span class="mark" aria-hidden="true"></span><span>Circular</span></div>
+          <div class="symbol success" aria-hidden="true">✓</div>
+          <p class="status">Adresse confirmée</p>
+          <h2>Votre compte est prêt</h2>
+          <p class="intro">Vous pouvez maintenant rejoindre l’espace auquel vous avez été invité ou créer votre premier espace.</p>
+          <a class="button" href="#espace">Continuer vers Circular <span aria-hidden="true">→</span></a>
+          <p class="foot">Les invitations reçues apparaîtront dans votre boîte de réception Circular.</p>
+        </article>
+      </figure>
+      <figure>
+        <figcaption>4 · Compte existant à confirmer</figcaption>
+        <article class="card" id="connexion">
+          <div class="brand"><span class="mark" aria-hidden="true"></span><span>Circular</span></div>
+          <p class="eyebrow">VOTRE ESPACE DE PROJET</p>
+          <h2>Confirmez votre adresse</h2>
+          <p class="intro">Votre session est ouverte. Confirmez votre adresse pour accepter les invitations d’espace.</p>
+          <div class="notice">Les projets et tickets auxquels vous avez déjà accès restent disponibles.</div>
+          <button type="button">Envoyer le lien de confirmation <span aria-hidden="true">→</span></button>
+          <a class="button secondary" href="#espace">Continuer sans accepter d’invitation</a>
+          <p class="foot">Si vous n’avez plus accès à cette adresse, contactez l’administrateur du service.</p>
+        </article>
+      </figure>
+    </section>
+    <p class="device-note"><strong>Tailles :</strong> quatre panneaux sur grand écran, deux colonnes sur tablette, cartes empilées sur mobile. <strong>Clavier :</strong> ordre de tabulation identique au parcours, focus jaune conservé. <strong>Thème :</strong> identité graphite et jaune, cohérente avec Circular.</p>
+  </main>
+</body>
+</html>

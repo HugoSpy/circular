@@ -8,7 +8,7 @@ La création d’espace est une transaction qui crée l’adhésion propriétair
 
 Le navigateur envoie `X-Workspace-Id`, capturé au départ de chaque requête. Le serveur valide l’adhésion et filtre les ressources de cet espace, y compris les accès directs, références d’étiquettes, préférences, vues et modèles. Les anciennes requêtes sans cet en-tête restent compatibles et soumises aux droits du compte ; omettre l’en-tête ne rétablit pas un accès révoqué. Les mutations PostgreSQL conservent un verrou sur l’adhésion sélectionnée pendant leur transaction. Côté React, un changement d’espace remonte l’application et empêche qu’une réponse tardive ou un enregistrement de réglages en attente ne contamine l’espace suivant.
 
-La sélection de l’espace fait partie de l’URL (`?workspace=<slug>`), les liens d’invitation utilisent un fragment et les données métier restent en base. Les invitations n’envoient pas d’email. GitHub/Slack sont des présentations explicitement inactives, conformément à la demande ; aucun accès à ces services n’est effectué.
+La sélection de l’espace fait partie de l’URL (`?workspace=<slug>`), les liens d’invitation utilisent un fragment et les données métier restent en base. Les invitations ne sont pas envoyées par email ; le SMTP sert à confirmer les adresses de compte. GitHub/Slack sont des présentations explicitement inactives, conformément à la demande ; aucun accès à ces services n’est effectué.
 
 Le runtime Docker passe à l’image officielle Python 3.12/Alpine 3.24 figée par digest. Le [diagnostic du scan](container-security.md) explique le changement de distribution et les vérifications associées.
 

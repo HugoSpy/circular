@@ -5,7 +5,7 @@ from pathlib import Path
 import secrets
 import stat
 
-parser = argparse.ArgumentParser(description="Créer les secrets initiaux pour PostgreSQL fourni par Compose.")
+parser = argparse.ArgumentParser(description="Créer les secrets initiaux pour Compose.")
 parser.add_argument("--directory", default="secrets")
 args = parser.parse_args()
 directory = Path(args.directory).resolve()
@@ -25,4 +25,10 @@ for name, value in zip(names, values):
     # must read their respective mounts even when the host operator owns them.
     # The enclosing 0700 host directory prevents other host users opening them.
     os.chmod(directory / name, 0o444)
-print("Trois fichiers secrets créés. Aucun identifiant affiché. Ne pas les versionner.")
+smtp_password = directory / "smtp_password"
+if not smtp_password.exists():
+    descriptor = os.open(smtp_password, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as file:
+        file.write("\n")
+    os.chmod(smtp_password, 0o444)
+print("Secrets PostgreSQL créés et secret SMTP vide ajouté s’il manquait. Aucun identifiant affiché. Ne pas les versionner.")

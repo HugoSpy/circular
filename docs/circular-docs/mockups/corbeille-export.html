@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Corbeille et export — Circular Docs</title>
+<style>
+:root{color-scheme:dark;font:15px/1.5 system-ui,sans-serif;--bg:#121315;--panel:#191a1e;--raised:#222328;--edge:#383a43;--ink:#f1f1f3;--muted:#aeb0ba;--accent:#f2cf63;--danger:#ffaaa5;--active:#332e1e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}[hidden]{display:none!important}header{min-height:68px;border-bottom:1px solid var(--edge);display:flex;align-items:center;justify-content:space-between;padding:.75rem clamp(1rem,4vw,2.5rem);gap:1rem}.brand{display:flex;align-items:center;gap:.7rem;font-weight:700}.brand i{width:22px;height:22px;border-radius:50%;border:4px solid var(--accent);border-right-color:transparent;transform:rotate(-35deg)}.shell{display:grid;grid-template-columns:255px minmax(0,1fr);min-height:calc(100dvh - 68px)}aside{background:#16171a;padding:1rem;border-right:1px solid var(--edge)}summary{cursor:pointer;font-weight:650;padding:.5rem 0}nav button{display:block;width:100%;text-align:left;border-color:transparent;background:transparent}nav button[aria-current]{background:var(--active);color:var(--accent)}main{width:min(100%,960px);padding:clamp(1rem,5vw,3.25rem);margin:0 auto}.muted,p{color:var(--muted)}.breadcrumb{font-size:.86rem;color:var(--muted)}h1{margin:.5rem 0 1rem;font-size:clamp(1.9rem,6vw,2.7rem);letter-spacing:-.035em;line-height:1.16}h2{font-size:1.13rem;margin:0 0 .6rem}.actions,.row{display:flex;align-items:center;flex-wrap:wrap;gap:.55rem}.actions{margin:1rem 0}.row{justify-content:space-between;padding:.85rem 0}.row+.row{border-top:1px solid var(--edge)}.row p{margin:.2rem 0 0;font-size:.86rem}.card{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:1rem 1.2rem;margin:1rem 0}button,select{font:inherit;min-height:44px;padding:.55rem .85rem;border-radius:7px;background:var(--raised);border:1px solid var(--edge);color:var(--ink)}button{cursor:pointer}button:hover{filter:brightness(1.12)}button:disabled{opacity:.6;cursor:wait}.primary{background:var(--accent);color:#211e13;border-color:var(--accent);font-weight:650}.danger{color:var(--danger);border-color:#704349}.error{color:var(--danger)}a{color:var(--accent)}a:focus-visible,button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.missing{border-bottom:1px dashed var(--muted)}dialog{width:min(100% - 2rem,465px);border:1px solid var(--edge);border-radius:12px;background:var(--panel);color:var(--ink);padding:1.25rem}dialog::backdrop{background:#0009}dialog .actions{justify-content:flex-end;margin-bottom:0}.demo{border-top:1px solid var(--edge);padding-top:1rem;margin-top:2rem}
+@media(max-width:660px){.shell{display:block}aside{border-right:0;border-bottom:1px solid var(--edge);padding:.5rem 1rem}.account{display:none}.card{padding:.85rem 1rem}}
+</style></head>
+<body><header><div class="brand"><i aria-hidden="true"></i>Circular Docs</div><span class="muted account">camille.exemple@epita.fr</span></header>
+<div class="shell"><aside><details open id="nav"><summary>Navigation</summary><nav aria-label="Espaces et pages">
+<button data-view="workspace">Mes espaces</button><button data-view="workspace">Forum des associations</button>
+<button id="tree-page" data-view="page" aria-current="page">Accueil des exposants</button><button id="nav-trash" data-view="trash">Corbeille</button>
+</nav></details></aside>
+<main><div class="breadcrumb">Forum des associations</div>
+<section id="workspace" hidden><h1 tabindex="-1">Forum des associations</h1><div class="actions"><button id="export" class="primary">Télécharger le ZIP Markdown</button></div>
+<p role="status" id="export-status">L’archive contient les pages actives et leurs liens relatifs.</p><button id="retry" hidden>Réessayer le téléchargement</button>
+<div class="card"><h2>Pages</h2><button data-view="page" id="open-page">Accueil des exposants</button><p id="empty-pages" hidden>Aucune page active dans cet espace.</p></div></section>
+<section id="page"><h1 tabindex="-1">Accueil des exposants</h1><div class="actions"><button id="delete" class="danger">Mettre à la corbeille</button></div>
+<div class="card"><p>Le plan des stands est disponible depuis le <a href="#plan">dossier logistique</a>.</p><p id="missing-link" hidden>La <span class="missing">Fiche des badges (page indisponible)</span> sera accessible après restauration.</p></div></section>
+<section id="trash" hidden><h1 tabindex="-1">Corbeille</h1>
+<p id="notice" role="status"></p><div class="card"><div class="row" id="trash-row" hidden>
+<div><strong>Accueil des exposants</strong><p>Plan du forum / Accueil des exposants</p><p>2 pages · Mis à la corbeille par Camille le 22 novembre</p></div>
+<button id="restore">Restaurer le sous-arbre</button></div><p id="empty-trash">La corbeille est vide.</p></div></section>
+<div class="row demo"><label for="scenario">Aperçu de la maquette</label><select id="scenario"><option value="owner">Édition</option><option value="reader">Membre lecteur</option><option value="root">Restauration à la racine</option><option value="link">Lien indisponible</option><option value="download">Téléchargement</option><option value="error">Échec du téléchargement</option></select></div>
+</main></div>
+<dialog id="confirmation" aria-labelledby="modal-title"><h2 id="modal-title"></h2><p id="modal-description"></p><div class="actions">
+<button id="cancel">Annuler</button><button id="confirm" class="primary"></button></div></dialog>
+<script>
+const by = id => document.getElementById(id);
+let trashed = false, atRoot = false, operation, trigger;
+function show(next) {
+  for (const name of ['workspace','page','trash']) by(name).hidden = name !== next;
+  for (const button of document.querySelectorAll('[data-view]')) {
+    if (button.dataset.view === next) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current');
+  }
+  const el = by(next).querySelector('h1');
+  el.focus();
+}
+function update() {
+  by('trash-row').hidden = !trashed; by('empty-trash').hidden = trashed;
+  by('open-page').hidden = trashed; by('tree-page').hidden = trashed; by('empty-pages').hidden = !trashed;
+}
+function ask(kind, button) {
+  operation = kind; trigger = button;
+  by('modal-title').textContent = kind === 'trash' ? 'Mettre cette page à la corbeille ?' : 'Restaurer le sous-arbre ?';
+  by('modal-description').textContent = kind === 'trash'
+    ? 'La page et sa sous-page disparaîtront de la navigation, de la recherche et des exports.'
+    : atRoot ? 'Le parent d’origine est indisponible. Les pages seront restaurées à la racine.' : 'Les deux pages reprendront leur place dans l’arborescence.';
+  by('confirm').textContent = kind === 'trash' ? 'Mettre à la corbeille' : 'Restaurer';
+  by('confirmation').showModal(); by('cancel').focus();
+}
+by('delete').onclick = () => ask('trash', by('delete'));
+by('restore').onclick = () => ask('restore', by('restore'));
+by('cancel').onclick = () => by('confirmation').close();
+by('confirmation').addEventListener('close', () => {
+  if (trigger?.checkVisibility()) trigger.focus();
+});
+by('confirm').onclick = () => {
+  trashed = operation === 'trash'; by('confirmation').close(); update(); show('trash');
+  by('notice').textContent = trashed ? 'Deux pages placées dans la corbeille.'
+    : atRoot ? 'Le sous-arbre a été restauré à la racine.' : 'Le sous-arbre a été restauré.';
+};
+function download() {
+  by('retry').hidden = true; by('export').disabled = true; by('export-status').classList.remove('error');
+  by('export-status').textContent = 'Préparation du fichier ZIP…';
+  setTimeout(() => { by('export-status').textContent = 'Téléchargement lancé.'; by('export').disabled = false; }, 700);
+}
+by('export').onclick = download; by('retry').onclick = download;
+document.addEventListener('click', event => {
+  const next = event.target.closest('[data-view]')?.dataset.view;
+  if (next) show(next);
+});
+by('scenario').addEventListener('change', event => {
+  const state = event.target.value;
+  atRoot = state === 'root'; trashed = atRoot; update(); by('notice').textContent = '';
+  by('nav-trash').hidden = state === 'reader'; by('delete').hidden = state === 'reader';
+  by('retry').hidden = state !== 'error'; by('missing-link').hidden = state !== 'link';
+  by('export-status').classList.toggle('error', state === 'error');
+  by('export-status').textContent = state === 'error' ? 'L’export a échoué.' : 'L’archive contient les pages actives et leurs liens relatifs.';
+  show(atRoot ? 'trash' : ['reader','download','error'].includes(state) ? 'workspace' : 'page');
+});
+if (matchMedia('(max-width:660px)').matches) by('nav').open = false;
+</script>
+</body></html>

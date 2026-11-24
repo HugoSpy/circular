@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from backend.app.main import create_app
 from backend.app.db.session import Database
 from backend.app.db.backfill import backfill_workspaces
+from tests.helpers import register_verified
 from tests.test_postgres import postgres_url  # noqa: F401
 
 PASSWORD = "Une phrase de test de 24 caracteres!"
@@ -15,9 +16,7 @@ PASSWORD = "Une phrase de test de 24 caracteres!"
 
 def account(app, name):
     client = TestClient(app, base_url="http://127.0.0.1:4310")
-    response = client.post("/api/auth/register", json={"email": f"{name}@epita.fr", "username": name, "password": PASSWORD})
-    assert response.status_code == 201, response.text
-    client.headers["X-CSRF-Token"] = response.json()["csrfToken"]
+    register_verified(client, f"{name}@epita.fr", name, PASSWORD)
     return client
 
 

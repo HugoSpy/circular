@@ -33,6 +33,8 @@ class SharingService:
             self.project(connection, project_id, owner=True)
             repo = SharingRepository(connection)
             user = WorkspaceService.require(repo.recipient(email), "Ce compte n’existe pas. La personne doit d’abord s’inscrire.")
+            if not user["email_verified"]:
+                raise DomainError(409, "Cette personne doit confirmer son adresse avant de recevoir une invitation.")
             if any(member["id"] == user["id"] for member in repo.members(project_id)):
                 raise DomainError(409, "Ce compte a déjà accès au projet.")
             return repo.invite(project_id, user["id"], self.user_id)
@@ -44,6 +46,10 @@ class SharingService:
     def respond(self, invitation_id: int, accept: bool) -> None:
         with scoped_connection(self.database, self.user_id, self.workspace_id, write=True) as connection:
             repo = SharingRepository(connection)
+            from backend.app.repositories.auth import AuthRepository
+            user = AuthRepository(connection).user(self.user_id)
+            if not user or not user["email_verified"]:
+                raise DomainError(403, "Confirmez votre adresse e-mail avant de répondre à une invitation.")
             invitation = WorkspaceService.require(repo.invitation(invitation_id, self.user_id, lock=False), "Invitation introuvable.")
             repo.lock_invitation_workspace(invitation["project_id"])
             invitation = WorkspaceService.require(repo.invitation(invitation_id, self.user_id), "Invitation introuvable.")

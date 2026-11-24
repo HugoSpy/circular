@@ -25,7 +25,7 @@ Les données existantes sont conservées lors de la migration. L’accès à un 
 
 À la demande de l’utilisateur, GitHub et Slack disposent d’écrans de présentation portant la mention « À venir ». Leur action affiche « Intégration pas encore implémentée ». Aucun OAuth, jeton, synchronisation ou appel à ces services n’est effectué. Il n’existe pas de faux état « connecté » ni d’abonnement aux actualités.
 
-La région d’hébergement n’est pas sélectionnable : elle est déterminée par l’infrastructure qui déploie Circular. Les invitations fonctionnent dans Circular ; aucun email n’est envoyé par un service SMTP.
+La région d’hébergement n’est pas sélectionnable : elle est déterminée par l’infrastructure qui déploie Circular. Les invitations de collaboration fonctionnent dans Circular. Le SMTP est utilisé pour les courriels de confirmation d’adresse ; les invitations de projet ou d’espace ne sont pas envoyées par courriel.
 
 ## Direction et interactions
 

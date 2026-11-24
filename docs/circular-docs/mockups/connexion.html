@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connexion — Circular Docs</title>
+<style>
+:root { color-scheme: dark; font: 16px/1.5 system-ui, sans-serif; --bg: #121315; --panel: #191a1e; --edge: #303138; --text: #f1f1f3; --muted: #a5a7af; --accent: #f2cf63; --danger: #ffaaa5; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100dvh; background: var(--bg); color: var(--text); display: grid; grid-template-rows: auto 1fr; }
+header { border-bottom: 1px solid var(--edge); }
+.brand { display: flex; align-items: center; gap: .75rem; max-width: 76rem; margin: auto; padding: 1.1rem clamp(1rem, 4vw, 2.75rem); font-weight: 700; }
+.mark { width: 1.4rem; height: 1.4rem; border: 4px solid var(--accent); border-right-color: transparent; border-radius: 50%; transform: rotate(-35deg); }
+main { width: min(100% - 2rem, 30rem); margin: auto; padding: 2rem 0; }
+.card { padding: clamp(1.4rem, 5vw, 2.4rem); border: 1px solid var(--edge); border-radius: 16px; background: var(--panel); }
+h1 { font-size: clamp(1.55rem, 4vw, 2rem); line-height: 1.2; margin: 0 0 .75rem; letter-spacing: -.035em; }
+p { color: var(--muted); margin: 0 0 1.5rem; }
+button, select { font: inherit; min-height: 44px; border-radius: 7px; }
+button { width: 100%; padding: .62rem 1rem; font-weight: 700; cursor: pointer; border: 1px solid var(--accent); background: var(--accent); color: #211e13; }
+button.secondary { color: var(--text); background: transparent; border-color: #61636f; }
+button:hover { filter: brightness(1.09); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.notice { border-inline-start: 3px solid var(--accent); padding-inline-start: .8rem; }
+.error { color: var(--danger); border-color: var(--danger); }
+.demo { margin-block-start: 1.25rem; display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; color: var(--muted); font-size: .875rem; }
+select { max-width: 100%; min-width: 0; border: 1px solid #61636f; background: var(--panel); color: var(--text); padding-inline: .55rem; }
+[hidden] { display: none; }
+</style>
+</head>
+<body>
+<header><div class="brand"><span class="mark" aria-hidden="true"></span>Circular Docs</div></header>
+<main>
+  <section class="card" id="connexion" aria-labelledby="titre-connexion">
+    <h1 id="titre-connexion" tabindex="-1">Se connecter</h1>
+    <p>Utilisez votre compte EPITA pour accéder à l’espace documentaire.</p>
+    <button type="button" data-next="forge">Continuer avec Forge ID</button>
+  </section>
+  <section class="card" id="forge" aria-labelledby="titre-forge" hidden>
+    <h1 id="titre-forge" tabindex="-1">Connexion via Forge ID</h1>
+    <p role="status">Vous allez être redirigé vers la page de connexion EPITA. Dans cette maquette, le bouton simule le retour.</p>
+    <button type="button" data-next="connecte">Simuler le retour de Forge ID</button>
+  </section>
+  <section class="card" id="connecte" aria-labelledby="titre-connecte" hidden>
+    <h1 id="titre-connecte" tabindex="-1">Session ouverte</h1>
+    <p>Connecté avec le compte <strong>camille.exemple@epita.fr</strong>.</p>
+    <button class="secondary" type="button" data-next="connexion">Se déconnecter</button>
+  </section>
+  <section class="card" id="expire" aria-labelledby="titre-expire" hidden>
+    <h1 id="titre-expire" tabindex="-1">Session expirée</h1>
+    <p class="notice" role="status">Reconnectez-vous pour continuer.</p>
+    <button type="button" data-next="forge">Se reconnecter avec Forge ID</button>
+  </section>
+  <section class="card" id="refuse" aria-labelledby="titre-refuse" hidden>
+    <h1 id="titre-refuse" tabindex="-1">Accès au pilote indisponible</h1>
+    <p class="notice error" role="alert">Ce compte n’a pas accès. Essayez avec un autre compte EPITA ou contactez la personne qui gère le pilote.</p>
+    <button type="button" data-next="forge">Essayer avec Forge ID</button>
+  </section>
+  <section class="card" id="erreur" aria-labelledby="titre-erreur" hidden>
+    <h1 id="titre-erreur" tabindex="-1">Connexion interrompue</h1>
+    <p class="notice error" role="alert">La connexion n’a pas abouti. Réessayez dans un instant.</p>
+    <button type="button" data-next="forge">Réessayer avec Forge ID</button>
+  </section>
+  <div class="demo">
+    <label for="etat">État de la maquette</label>
+    <select id="etat">
+      <option value="connexion">Connexion</option><option value="forge">Redirection</option>
+      <option value="connecte">Session ouverte</option><option value="expire">Session expirée</option>
+      <option value="refuse">Accès refusé</option><option value="erreur">Connexion interrompue</option>
+    </select>
+  </div>
+</main>
+<script>
+const picker = document.querySelector('#etat');
+const screens = document.querySelectorAll('section');
+function show(id, moveFocus) {
+  for (const screen of screens) screen.hidden = screen.id !== id;
+  picker.value = id;
+  if (moveFocus) document.querySelector('#' + id + ' h1').focus();
+}
+picker.addEventListener('change', () => show(picker.value, false));
+for (const button of document.querySelectorAll('[data-next]')) {
+  button.addEventListener('click', () => show(button.dataset.next, true));
+}
+</script>
+</body>
+</html>

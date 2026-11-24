@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Espaces privés — Circular Docs</title>
+<style>
+:root{color-scheme:dark;font:15px/1.55 system-ui,sans-serif;--bg:#121315;--panel:#191a1e;--raised:#222328;--line:#383a43;--ink:#f1f1f3;--muted:#aeb0ba;--accent:#f2cf63;--active:#332e1e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink)}button,input,select{font:inherit;color:inherit}button,select{min-height:44px}button,summary{cursor:pointer}button,input,select{border:1px solid var(--line);border-radius:7px;background:var(--raised);padding:.55rem .8rem}button:hover,summary:hover{filter:brightness(1.2)}:focus-visible{outline:2px solid var(--accent);outline-offset:3px}a{color:var(--accent)}[hidden]{display:none!important}
+header{min-height:68px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.7rem clamp(1rem,4vw,2.5rem)}.brand{font-weight:700;display:flex;align-items:center;gap:.68rem}.brand i{width:22px;height:22px;border-radius:50%;border:4px solid var(--accent);border-right-color:transparent;transform:rotate(-35deg)}.account{color:var(--muted);font-size:.85rem}.shell{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:calc(100dvh - 68px)}aside{padding:1.2rem;border-right:1px solid var(--line);background:#16171a}summary{font-weight:650;padding:.52rem 0}nav button{display:block;background:transparent;border-color:transparent;width:100%;text-align:left;margin:.16rem 0}nav button[aria-current]{background:var(--active);color:var(--accent)}.tree{list-style:none;margin:.35rem 0 .9rem;padding:0}.tree ul{list-style:none;padding-inline-start:.9rem;border-inline-start:1px solid var(--line)}.nav-title{font-size:.78rem;margin:1.15rem 0 .25rem;color:var(--muted)}main{width:min(100%,920px);margin-inline:auto;padding:clamp(1.2rem,5vw,3.4rem)}.crumb{font-size:.87rem;color:var(--muted);min-height:1.5rem}.crumb button{background:none;border:none;min-height:36px;padding:0 .25rem;color:var(--accent)}h1{font-size:clamp(1.85rem,6vw,2.75rem);letter-spacing:-.035em;line-height:1.15;margin:.55rem 0 .85rem}h2{font-size:1.1rem;margin:0 0 .7rem}p{color:var(--muted)}.actions{display:flex;flex-wrap:wrap;gap:.55rem;margin:1.3rem 0 1.8rem}.primary{background:var(--accent);color:#211e13;border-color:var(--accent);font-weight:650}.card{border:1px solid var(--line);border-radius:12px;padding:1rem 1.2rem;background:var(--panel);margin-top:1rem}.row{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;padding:.75rem 0}.row+.row{border-top:1px solid var(--line)}.row p{font-size:.85rem;margin:.1rem 0 0}.muted{color:var(--muted)}.role{font-size:.83rem;color:var(--accent);background:var(--active);border-radius:20px;padding:.25rem .6rem}.demo{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin:2.5rem 0 0;padding-top:1rem;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}.error{color:#ffaaa5}dialog{width:min(calc(100% - 2rem),460px);background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:1.4rem}dialog::backdrop{background:#0009}form label{display:grid;gap:.4rem;margin-bottom:1rem}form input,form select{width:100%}form .actions{justify-content:flex-end;margin-bottom:0}@media(max-width:660px){.shell{display:block}aside{border-right:none;border-bottom:1px solid var(--line);padding:.5rem 1rem}main{padding:1.25rem 1rem 2rem}.account{display:none}.actions{margin-block:1rem}.card{padding:.85rem 1rem}}
+</style>
+</head>
+<body>
+<header><div class="brand"><i aria-hidden="true"></i>Circular Docs</div><div class="account">camille.exemple@epita.fr</div></header>
+<div class="shell">
+<aside><details id="navigation" open><summary>Navigation</summary><nav aria-label="Espaces et pages">
+<button data-show="espaces">Mes espaces</button><button data-show="invitations">Invitations reçues</button>
+<div id="workspace-nav"><div class="nav-title">Forum des associations</div>
+<ul class="tree"><li><button data-show="page" data-page="plan" aria-current="page">Plan du forum</button><ul><li><button data-show="page" data-page="accueil">Accueil des exposants</button></li></ul></li><li><button data-show="page" data-page="logistique">Logistique</button></li></ul>
+<button class="owner-only" data-show="membres">Membres et invitations</button></div>
+</nav></details></aside>
+<main>
+<div class="crumb" id="breadcrumb"></div>
+<section id="espaces" hidden><h1 tabindex="-1">Mes espaces</h1><div class="actions"><button class="primary" data-dialog="nouvel-espace">Créer un espace</button></div>
+<div class="card"><div class="row"><div><strong>Forum des associations</strong><p>Espace privé · 3 pages</p></div><button data-show="page" data-page="plan">Ouvrir</button></div></div></section>
+<section id="page"><h1 id="page-title" tabindex="-1">Plan du forum</h1><span class="role" id="role">Propriétaire</span><div class="actions edit-only">
+<button class="primary" data-dialog="nouvelle-page">Créer une page</button><button data-dialog="renommer">Renommer</button><button data-dialog="deplacer">Déplacer</button></div>
+<p id="page-status" role="status"></p><div class="card" id="child-card"><h2>Sous-pages</h2><button data-show="page" data-page="accueil">Accueil des exposants</button></div></section>
+<section id="membres" hidden><h1 tabindex="-1">Membres et invitations</h1><div class="actions"><button class="primary" data-dialog="inviter">Inviter un compte</button></div>
+<div class="card"><h2>Membres</h2><div class="row"><strong>camille.exemple@epita.fr</strong><span class="role">Propriétaire</span></div><div class="row"><strong>alex.exemple@epita.fr</strong><button data-dialog="role">Modifier le rôle ou retirer</button></div></div>
+<div class="card"><h2>Invitations en attente</h2><div class="row" id="sent-invite"><div><strong>lea.exemple@epita.fr</strong><p id="sent-meta">Lecteur · expire dans 7 jours</p></div><button id="revoke">Révoquer</button></div><p id="members-status" role="status" hidden></p></div></section>
+<section id="invitations" hidden><h1 tabindex="-1">Invitations reçues</h1><div class="card"><div class="row" id="received-invite"><div><strong>Forum des associations</strong><p>Lecteur · expire dans 7 jours</p></div><button class="primary" id="accept">Accepter</button></div><p id="invite-status" role="status" hidden></p></div></section>
+<section id="indisponible" hidden><h1 tabindex="-1">Page indisponible</h1><p>Ce lien ne donne pas accès à la page.</p><div class="actions"><button data-show="invitations">Voir mes invitations</button><button data-show="espaces">Retour à mes espaces</button></div></section>
+<section id="vide" hidden><h1 tabindex="-1">Nouvel espace</h1><p>Cet espace ne contient encore aucune page.</p><button class="primary" data-dialog="nouvelle-page">Créer une première page</button></section>
+<div class="demo"><label for="scenario">Aperçu de la maquette</label><select id="scenario">
+<option value="owner">Propriétaire</option><option value="editor">Éditeur</option><option value="reader">Lecteur</option><option value="pending">Lien avant acceptation</option><option value="expired">Invitation expirée</option><option value="revoked">Accès révoqué</option><option value="empty">Espace vide</option></select></div>
+</main></div>
+<dialog><form>
+<h2 id="dialog-title"></h2><div id="fields"></div><p id="dialog-error" class="error" role="alert" hidden></p><div class="actions"><button type="button" id="cancel">Annuler</button><button type="submit" class="primary" id="confirm">Enregistrer</button></div>
+</form></dialog>
+<script>
+const select = document.querySelector('#scenario');
+const dialog = document.querySelector('dialog');
+dialog.setAttribute('aria-labelledby', 'dialog-title');
+const headings = Object.fromEntries([...document.querySelectorAll('main section')].map(section => [section.id, section]));
+const pages = {plan:'Plan du forum', accueil:'Accueil des exposants', logistique:'Logistique'};
+const parents = {plan:null, accueil:'plan', logistique:null};
+const roleLabels = {owner:'Propriétaire', editor:'Éditeur', reader:'Lecteur'};
+const titles = {'nouvel-espace':'Créer un espace', 'nouvelle-page':'Créer une page', renommer:'Renommer la page', deplacer:'Déplacer la page', inviter:'Inviter un compte', role:'Modifier le rôle ou retirer'};
+let role = 'owner', current = 'plan', view = 'page', action, trigger;
+let canOpen = true;
+function setRole(next) {
+  role = next;
+  document.querySelector('#role').textContent = roleLabels[role];
+  document.querySelectorAll('.owner-only').forEach(item => item.hidden = role !== 'owner');
+  document.querySelectorAll('.edit-only').forEach(item => item.hidden = role === 'reader');
+}
+function show(next, page = current, focus = true) {
+  if ((next === 'page' || next === 'membres') && !canOpen) next = 'indisponible';
+  view = next;
+  current = page;
+  for (const section of Object.values(headings)) section.hidden = section.id !== next;
+  document.querySelector('#page-title').textContent = pages[page];
+  document.querySelector('#child-card').hidden = parents.accueil !== page;
+  const breadcrumb = document.querySelector('#breadcrumb');
+  breadcrumb.replaceChildren();
+  if (next === 'page' || next === 'membres') breadcrumb.append('Forum des associations');
+  if (next === 'page' && parents[page]) {
+    const parent = document.createElement('button');
+    parent.type = 'button'; parent.dataset.show = 'page'; parent.dataset.page = parents[page]; parent.textContent = pages[parents[page]];
+    breadcrumb.append(' / ', parent);
+  }
+  for (const button of document.querySelectorAll('nav button')) {
+    if (button.dataset.show === next && (next !== 'page' || button.dataset.page === page)) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+    if (button.dataset.page) button.textContent = pages[button.dataset.page];
+  }
+  if (focus) headings[next].querySelector('h1').focus();
+}
+document.querySelector('#cancel').addEventListener('click', () => dialog.close());
+dialog.addEventListener('close', () => trigger?.focus());
+function notify(id, message) {
+  const el = document.querySelector(id); el.textContent = message; el.hidden = !message;
+}
+function openForm(name, button) {
+  action = name; trigger = button;
+  document.querySelector('#dialog-title').textContent = titles[name];
+  const field = document.querySelector('#fields');
+  const roleOptions = '<option>Lecteur</option><option>Éditeur</option>';
+  const targets = '<option value="">À la racine</option><option value="plan">Plan du forum</option><option value="accueil">Accueil des exposants</option><option value="logistique">Logistique</option>';
+  const titleField = '<label>Titre<input name="title" required maxlength="160"></label>';
+  const fields = {
+    'nouvel-espace':'<label>Nom de l’espace<input name="title" required maxlength="160"></label>',
+    'nouvelle-page':titleField + '<label>Page parente<select name="parent">' + targets + '</select></label>',
+    renommer:titleField,
+    deplacer:'<label>Nouveau parent<select name="parent">' + targets + '</select></label>',
+    inviter:'<label>Adresse EPITA<input type="email" name="email" required placeholder="adresse@epita.fr"></label><label>Rôle<select name="role">' + roleOptions + '</select></label>',
+    role:'<label>Rôle<select name="role">' + roleOptions + '<option>Retirer du groupe</option></select></label>'
+  };
+  field.innerHTML = fields[name];
+  if (name === 'renommer') field.querySelector('input').value = pages[current];
+  notify('#dialog-error', '');
+  dialog.showModal();
+}
+document.addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (!button) return;
+  if (button.dataset.show) {
+    show(button.dataset.show, button.dataset.page);
+    if (matchMedia('(max-width:660px)').matches) document.querySelector('#navigation').open = false;
+  }
+  if (button.dataset.dialog) openForm(button.dataset.dialog, button);
+});
+dialog.querySelector('form').addEventListener('submit', event => {
+  event.preventDefault();
+  const values = new FormData(event.currentTarget);
+  if (action === 'deplacer' && (values.get('parent') === current || parents[values.get('parent')] === current)) {
+    notify('#dialog-error', 'Cette destination formerait un cycle. Choisissez une autre page parente.');
+    return;
+  }
+  if (action === 'renommer') pages[current] = values.get('title');
+  if (action === 'deplacer') parents[current] = values.get('parent') || null;
+  dialog.close();
+  if (action === 'nouvel-espace') { headings.vide.querySelector('h1').textContent = values.get('title'); show('vide'); }
+  if (action === 'nouvelle-page') { pages.exemple = values.get('title'); parents.exemple = values.get('parent') || null; show('page', 'exemple'); }
+  if (action === 'renommer' || action === 'deplacer') { show('page'); notify('#page-status', 'Modification enregistrée.'); }
+  if (action === 'inviter') {
+    document.querySelector('#sent-invite').hidden = false;
+    document.querySelector('#sent-invite strong').textContent = values.get('email');
+    document.querySelector('#sent-meta').textContent = values.get('role') + ' · expire dans 7 jours';
+    notify('#members-status', 'Invitation envoyée.');
+  }
+  if (action === 'role') notify('#members-status', values.get('role') === 'Retirer du groupe' ? 'Accès retiré.' : 'Rôle mis à jour.');
+});
+document.querySelector('#revoke').addEventListener('click', () => {
+  document.querySelector('#sent-invite').hidden = true; notify('#members-status', 'Invitation révoquée.');
+  document.querySelector('[data-dialog=inviter]').focus();
+});
+document.querySelector('#accept').addEventListener('click', () => {
+  canOpen = true; document.querySelector('#workspace-nav').hidden = false;
+  document.querySelector('#received-invite').hidden = true; setRole('reader'); show('page', 'plan');
+  notify('#page-status', 'Invitation acceptée.');
+});
+select.addEventListener('change', () => {
+  const scenario = select.value;
+  canOpen = !['pending','expired','revoked'].includes(scenario);
+  const invite = document.querySelector('#received-invite');
+  invite.hidden = !['pending','owner','editor','reader'].includes(scenario);
+  notify('#invite-status', scenario === 'expired' ? 'Cette invitation a expiré.' : scenario === 'revoked' ? 'L’accès à cet espace a été révoqué.' : '');
+  notify('#page-status', '');
+  setRole(roleLabels[scenario] ? scenario : scenario === 'empty' ? 'owner' : 'reader');
+  document.querySelector('#workspace-nav').hidden = !canOpen;
+  show(scenario === 'empty' ? 'vide' : scenario === 'expired' ? 'invitations' : canOpen ? 'page' : 'indisponible', 'plan', false);
+});
+if (matchMedia('(max-width:660px)').matches) document.querySelector('#navigation').open = false;
+show('page', 'plan', false);
+</script>
+</body>
+</html>

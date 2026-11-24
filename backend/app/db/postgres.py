@@ -17,6 +17,14 @@ IDENTITY_TABLES = frozenset({
 })
 
 
+class IntegrityViolation(sqlite3.IntegrityError):
+    """Sanitized cross-driver integrity error with safe constraint metadata."""
+    def __init__(self, sqlstate: str | None, constraint_name: str | None):
+        super().__init__("Database integrity constraint violated.")
+        self.sqlstate = sqlstate
+        self.constraint_name = constraint_name
+
+
 def compile_sql(sql: str, *, parameters: bool = True) -> str:
     """Convert qmark placeholders without treating SQL literals as placeholders.
 
@@ -126,9 +134,8 @@ class PostgresConnection:
             cursor = self.raw.execute(compile_sql(statement, parameters=bool(values)), tuple(values) if values else None)
             return Cursor(cursor, generated_id=generated_id)
         except psycopg.IntegrityError as error:
-            # Preserve the service layer's existing driver-independent behavior
-            # while exposing no PostgreSQL diagnostics or values in HTTP errors.
-            raise sqlite3.IntegrityError("Database integrity constraint violated.") from error
+            # Preserve only safe diagnostic metadata; never expose driver text.
+            raise IntegrityViolation(error.sqlstate, error.diag.constraint_name) from error
 
     def executemany(self, sql: str, rows: Iterable[Sequence[Any]]) -> Cursor:
         import psycopg
@@ -138,7 +145,7 @@ class PostgresConnection:
             cursor.executemany(compile_sql(sql), rows)
             return Cursor(cursor)
         except psycopg.IntegrityError as error:
-            raise sqlite3.IntegrityError("Database integrity constraint violated.") from error
+            raise IntegrityViolation(error.sqlstate, error.diag.constraint_name) from error
 
     def commit(self) -> None:
         self.raw.commit()

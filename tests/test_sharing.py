@@ -2,6 +2,9 @@
 import pytest
 from fastapi.testclient import TestClient
 from backend.app.main import create_app
+from backend.app.core.passwords import hash_password
+from backend.app.repositories.auth import AuthRepository
+from tests.helpers import register_verified
 
 PASSWORD = "Mot-de-passe-test-37!"
 
@@ -12,9 +15,7 @@ def people(tmp_path):
     clients = []
     for name in ("alice", "bob", "charlie"):
         client = TestClient(app, base_url="http://127.0.0.1:4310")
-        result = client.post("/api/auth/register", json={"email": f"{name}@epita.fr", "username": name, "password": PASSWORD})
-        assert result.status_code == 201, result.text
-        client.headers["X-CSRF-Token"] = result.json()["csrfToken"]
+        register_verified(client, f"{name}@epita.fr", name, PASSWORD)
         clients.append(client)
     yield clients
     for client in clients:
@@ -143,6 +144,30 @@ def test_invitation_decline_cancel_and_owner_protection(people):
     assert bob.post(f"/api/invitations/{item['id']}/accept", json={}).status_code == 404
     owner = alice.get(f"/api/projects/{pid}/members").json()[0]["id"]
     assert alice.delete(f"/api/projects/{pid}/members/{owner}").status_code == 409
+
+
+def test_unverified_account_cannot_receive_or_claim_private_invitations(people):
+    alice, _bob, _charlie = people
+    app = alice.app
+    database = app.state.database
+    password = "Une phrase de passe non confirmée 42!"
+    with database.connect(write=True) as connection:
+        user = AuthRepository(connection).create_user("legacy@epita.fr", "Legacy", hash_password(password), email_verified=False)
+    with TestClient(app, base_url="http://127.0.0.1:4310") as legacy:
+        login = legacy.post("/api/auth/login", json={"identifier": "legacy@epita.fr", "password": password})
+        assert login.status_code == 200 and login.json()["emailVerified"] is False
+        legacy.headers["X-CSRF-Token"] = login.json()["csrfToken"]
+        space = alice.post("/api/workspaces", json={"name": "Espace privé", "slug": "equipe-privee", "includeWelcomeIssues": False}).json()["workspace"]
+        workspace_invite = alice.post(f"/api/workspaces/{space['id']}/invitations", json={"email": user["email"]})
+        assert workspace_invite.status_code == 201
+        assert legacy.get("/api/workspace-invitations").json() == []
+        assert legacy.post(f"/api/workspace-invitations/{workspace_invite.json()['id']}/accept", json={}).status_code == 403
+        link = alice.post(f"/api/workspaces/{space['id']}/invite-links", json={}).json()
+        assert legacy.post("/api/workspace-invite-links/accept", json={"token": link["token"]}).status_code == 403
+        project_data = alice.post("/api/projects", json={"name": "Projet fermé", "key": "FERME"}).json()
+        rejected = alice.post(f"/api/projects/{project_data['id']}/invitations", json={"email": user["email"]})
+        assert rejected.status_code == 409
+        assert legacy.get("/api/invitations").json() == []
 
 
 def test_anonymous_api_denies_data_and_csrf_is_mandatory(people):

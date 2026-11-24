@@ -9,6 +9,7 @@ from backend.app.db.session import Database
 from backend.app.repositories.preferences import PreferencesRepository
 from backend.app.services.auth import AuthService
 from backend.app.services.preferences import PreferencesService
+from tests.helpers import register_verified
 from tests.test_postgres import postgres_url
 
 
@@ -19,9 +20,7 @@ def people(tmp_path):
         clients = []
         for username in ("Alice", "Bob", "Charlie"):
             client = stack.enter_context(TestClient(app, base_url="http://127.0.0.1:4310"))
-            result = client.post("/api/auth/register", json={"email": f"{username.lower()}@epita.fr", "username": username, "password": "Une phrase de passe fictive 42!"})
-            assert result.status_code == 201
-            client.headers["X-CSRF-Token"] = result.json()["csrfToken"]
+            result = register_verified(client, f"{username.lower()}@epita.fr", username, "Une phrase de passe fictive 42!")
             client.user_id = result.json()["user"]["id"]
             clients.append(client)
         yield app, *clients
@@ -145,8 +144,10 @@ def test_revocation_cleans_personal_references_to_inaccessible_labels(people):
 
 def test_postgres_parallel_first_settings_changes_preserve_both_fields(postgres_url, monkeypatch):
     database = Database(postgres_url)
-    account, _ = AuthService(database).register("parallel@epita.fr", "Parallel", "Phrase de passe de test 42!", "test-peer")
-    service = PreferencesService(database, account["user"]["id"])
+    from backend.app.repositories.auth import AuthRepository
+    with database.connect(write=True) as connection:
+        account = AuthRepository(connection).create_user("parallel@epita.fr", "Parallel", "hash")
+    service = PreferencesService(database, account["id"])
     first_read, second_read, first_saved = Event(), Event(), Event()
     worker = local()
     original_read, original_save = PreferencesRepository.settings, PreferencesRepository.save_settings
