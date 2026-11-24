@@ -1,3 +1,4 @@
+import { McpConnections } from './McpConnect';
 import { useState } from 'react';
 import { ChatCenteredDots, Code, Info } from '@phosphor-icons/react';
 
@@ -5,7 +6,7 @@ import { ChatCenteredDots, Code, Info } from '@phosphor-icons/react';
 export function IntegrationsPanel() {
   const [notice, setNotice] = useState('');
   return <div className="integrations-panel">
-    <p className="field-hint">Ces intégrations seront proposées prochainement. Votre espace est utilisable dès maintenant.</p>
+    <McpConnections />
     <div className="integration-cards">
       {[{ name: 'GitHub', Icon: Code, description: 'Relier vos tickets aux branches et aux pull requests.' }, { name: 'Slack', Icon: ChatCenteredDots, description: 'Retrouver les mises à jour de vos projets dans vos conversations.' }].map(({ name, Icon, description }) => <article className="integration-card" key={name}>
         <span className="integration-icon"><Icon size={25} aria-hidden="true" /></span>

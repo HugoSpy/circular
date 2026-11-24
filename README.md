@@ -52,6 +52,8 @@ Ne pas inclure `compose.local.yaml` en production. L’application refuse une co
 
 ## Comptes, confidentialité et partage
 
+Pour connecter un assistant IA aux projets et tickets, consulter le [guide MCP de Circular](docs/mcp/README.md).
+
 Inscription avec pseudo unique, adresse `@epita.fr` et mot de passe de 12 à 128 caractères ; connexion par pseudo ou adresse. Le contrôle du domaine **ne vérifie pas la possession de l’adresse** : aucun courriel de validation ou d’invitation n’est envoyé. Ce point doit être accepté pour le pilote, ou complété par une validation mail/SSO avant une ouverture nécessitant une identité scolaire certifiée.
 
 Un compte peut posséder ou rejoindre plusieurs espaces. Le menu en haut à gauche permet de changer d’espace, en créer un, accéder aux paramètres et gérer ses membres. Le propriétaire invite une adresse EPITA, même avant son inscription, ou crée un lien d’invitation révocable valable sept jours. L’adhésion exige un compte connecté et une acceptation explicite.

@@ -10,6 +10,7 @@ services:
     environment:
       CIRCULAR_ENV: production
       CIRCULAR_PUBLIC_URL: ${CIRCULAR_PUBLIC_URL:?Set CIRCULAR_PUBLIC_URL to the HTTPS origin}
+      CIRCULAR_MCP_REDIRECT_URIS: ${CIRCULAR_MCP_REDIRECT_URIS:-}
       CIRCULAR_DATABASE_URL_FILE: /run/secrets/database_url
       CIRCULAR_TRUSTED_PROXIES: ${CIRCULAR_TRUSTED_PROXIES:-127.0.0.1}
     secrets:

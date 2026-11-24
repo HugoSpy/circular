@@ -42,9 +42,9 @@ class WorkspaceService:
                 if label_workspace != project["workspaceId"]:
                     raise DomainError(422, "Le projet et ses étiquettes doivent appartenir au même espace.")
 
-    def projects(self) -> list[dict]:
+    def projects(self, *, limit: int | None = None, after_id: int = 0) -> list[dict]:
         with scoped_connection(self.database, self.user_id, self.workspace_id) as connection:
-            return WorkspaceRepository(connection, self.user_id, self.workspace_id).projects()
+            return WorkspaceRepository(connection, self.user_id, self.workspace_id).projects(limit=limit, after_id=after_id)
 
     def create_project(self, data: dict) -> dict:
         try:
@@ -75,9 +75,9 @@ class WorkspaceService:
             repo.delete_project(project_id)
             PreferencesRepository(connection).remove_filter_reference(project_id=project_id)
 
-    def issues(self, filters: dict) -> list[dict]:
+    def issues(self, filters: dict, *, limit: int | None = None, after_id: int = 0) -> list[dict]:
         with scoped_connection(self.database, self.user_id, self.workspace_id) as connection:
-            return WorkspaceRepository(connection, self.user_id, self.workspace_id).issues(filters)
+            return WorkspaceRepository(connection, self.user_id, self.workspace_id).issues(filters, limit=limit, after_id=after_id)
 
     def issue(self, issue_id: int) -> dict:
         with scoped_connection(self.database, self.user_id, self.workspace_id) as connection:

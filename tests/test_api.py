@@ -1,5 +1,6 @@
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 import pytest
 from tests.helpers import AuthenticatedTestClient as TestClient
 from backend.app.main import create_app
@@ -238,4 +239,6 @@ def test_seed_is_explicit_atomic_idempotent_and_preserves_deleted_demo(tmp_path)
     assert seed_database(database) is False
     with database.connect() as connection:
         assert connection.execute("SELECT COUNT(*) FROM issues").fetchone()[0] == 15
-        assert connection.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0] == 5
+        migrations = Path(__file__).parents[1] / "backend/app/db/migrations"
+        installed = connection.execute("SELECT version FROM schema_migrations ORDER BY version").fetchall()
+        assert [row[0] for row in installed] == sorted(path.name for path in migrations.glob("[0-9]*.sql"))

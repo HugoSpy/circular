@@ -49,13 +49,17 @@ class LocalSecurityMiddleware:
             return await reject(403, "Hôte non autorisé.")
         if origin and not allowed_origin:
             return await reject(403, "Origine non autorisée.")
-        if headers.get("sec-fetch-site") == "cross-site" and not allowed_origin:
+        oauth_navigation = (self.public_url and scope["path"] == "/authorize" and scope["method"] == "GET"
+                            and headers.get("sec-fetch-mode") == "navigate" and headers.get("sec-fetch-dest") == "document")
+        if headers.get("sec-fetch-site") == "cross-site" and not (allowed_origin or oauth_navigation):
             return await reject(403, "Requête intersite non autorisée.")
         if scope["method"] == "OPTIONS":
             return await Response(status_code=204, headers={"Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, X-CSRF-Token, X-Workspace-Id"})(scope, receive, secure_send)
         if scope["method"] in {"POST", "PATCH", "PUT"}:
-            if headers.get("content-type", "").split(";")[0].strip().lower() != "application/json":
-                return await reject(415, "Le contenu doit être au format application/json.")
+            oauth_form = self.public_url and scope["method"] == "POST" and scope["path"] in {"/token", "/revoke"}
+            content_type = "application/x-www-form-urlencoded" if oauth_form else "application/json"
+            if headers.get("content-type", "").split(";")[0].strip().lower() != content_type:
+                return await reject(415, f"Le contenu doit être au format {content_type}.")
             try:
                 if int(headers.get("content-length", "0")) > BODY_LIMIT:
                     return await reject(413, "La requête dépasse la limite de 128 Ko.")

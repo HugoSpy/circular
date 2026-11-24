@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import { X, Circle, CircleDashed, CircleHalf, CheckCircle, WarningCircle, Minus, Eye } from '@phosphor-icons/react';
 import { PRIORITY_NAMES, STATUS_NAMES, type Priority, type Status } from './types';
 
@@ -12,7 +12,7 @@ export function PriorityMark({ priority }: { priority: Priority }) {
   const level = { none: 0, low: 1, medium: 2, high: 3, urgent: 4 }[priority];
   return <span className={`priority-mark ${priority}`} role="img" aria-label={PRIORITY_NAMES[priority]} title={`Priorité : ${PRIORITY_NAMES[priority]}`}>{priority === 'none' ? <Minus size={16} /> : priority === 'urgent' ? <WarningCircle size={16} weight="fill" /> : <span className="priority-bars" aria-hidden="true">{[1, 2, 3].map(bar => <i key={bar} className={bar <= level ? 'filled' : ''} />)}</span>}</span>;
 }
-export function Dialog({ title, children, onClose, dirty = false, pending = false, drawer = false, onSave }: { title: string; children: ReactNode; onClose: () => void; dirty?: boolean; pending?: boolean; drawer?: boolean; onSave?: () => void }) {
+export function Dialog({ title, children, onClose, dirty = false, pending = false, drawer = false, onSave, fallbackFocus }: { title: string; children: ReactNode; onClose: () => void; dirty?: boolean; pending?: boolean; drawer?: boolean; onSave?: () => void; fallbackFocus?: RefObject<HTMLElement | null> }) {
   const ref = useRef<HTMLDialogElement>(null);
   const close = () => { if (!pending && (!dirty || window.confirm('Abandonner les modifications non enregistrées ?'))) onClose(); };
   useEffect(() => {
@@ -26,7 +26,7 @@ export function Dialog({ title, children, onClose, dirty = false, pending = fals
       requestAnimationFrame(() => {
         if (document.querySelector('dialog[open]')) return;
         const replacement = focusKey ? document.querySelector<HTMLElement>(`[data-focus-key="${CSS.escape(focusKey)}"]`) : null;
-        const target = previous?.isConnected ? previous : replacement || document.querySelector<HTMLElement>('main h1');
+        const target = previous?.isConnected ? previous : replacement || fallbackFocus?.current || document.querySelector<HTMLElement>('main h1');
         target?.focus({ preventScroll: true });
       });
     };

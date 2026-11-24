@@ -5,7 +5,7 @@ import type { AuthSession, User } from './types';
 import { Dialog, ErrorMessage, message } from './ui';
 import './account-features.css';
 
-export function AuthGate({ children }: { children: (user: User, endSession: (notice?: string) => void, updateUser: (user: User) => void) => ReactNode }) {
+export function AuthGate({ children, mcpLogin = false }: { mcpLogin?: boolean; children: (user: User, endSession: (notice?: string) => void, updateUser: (user: User) => void) => ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -41,12 +41,12 @@ export function AuthGate({ children }: { children: (user: User, endSession: (not
   if (loading) return <main className="auth-shell"><div className="auth-card"><Brand /><p role="status">Ouverture de votre espace…</p></div></main>;
   if (error) return <main className="auth-shell"><div className="auth-card"><Brand /><h1>Connexion au serveur</h1><ErrorMessage>{error}</ErrorMessage><button className="button primary" onClick={() => setAttempt(value => value + 1)}>Réessayer</button></div></main>;
   if (session) return children(session.user, endSession, user => setSession(current => current ? { ...current, user } : current));
-  return <LoginForm notice={notice} onAuthenticated={authenticated} />;
+  return <LoginForm mcpLogin={mcpLogin} notice={notice} onAuthenticated={authenticated} />;
 }
 
 function Brand() { return <div className="auth-brand"><span className="brand-mark" aria-hidden="true" /><span>Circular</span></div>; }
 
-function LoginForm({ notice, onAuthenticated }: { notice: string; onAuthenticated: (session: AuthSession) => void }) {
+function LoginForm({ notice, onAuthenticated, mcpLogin }: { mcpLogin: boolean; notice: string; onAuthenticated: (session: AuthSession) => void }) {
   const [register, setRegister] = useState(false);
   const [identifier, setIdentifier] = useState('');
   const [username, setUsername] = useState('');
@@ -65,7 +65,7 @@ function LoginForm({ notice, onAuthenticated }: { notice: string; onAuthenticate
     finally { setPending(false); }
   }
   function switchMode() { setRegister(value => !value); setPassword(''); setConfirm(''); setError(''); }
-  return <main className="auth-shell"><div className="auth-card"><Brand /><p className="auth-eyebrow">VOTRE ESPACE DE PROJET</p><h1>{register ? 'Créer un compte' : 'Se connecter'}</h1><p className="auth-intro">{register ? 'Créez vos projets privés et invitez les personnes avec qui vous travaillez.' : 'Retrouvez vos projets, vos tickets et votre équipe.'}</p>
+  return <main className="auth-shell"><div className="auth-card"><Brand /><p className="auth-eyebrow">VOTRE ESPACE DE PROJET</p><h1>{register ? 'Créer un compte' : mcpLogin ? 'Connectez-vous à Circular' : 'Se connecter'}</h1><p className="auth-intro">{register ? 'Créez vos projets privés et invitez les personnes avec qui vous travaillez.' : mcpLogin ? 'Connectez-vous pour examiner la demande d’accès de votre assistant.' : 'Retrouvez vos projets, vos tickets et votre équipe.'}</p>
     {notice && <p className="settings-notice" role="status">{notice}</p>}
     <form aria-busy={pending} onSubmit={event => { event.preventDefault(); void submit(); }}><fieldset disabled={pending}><ErrorMessage>{error}</ErrorMessage>
       {register ? <><label>Pseudo<input autoComplete="username" required minLength={2} maxLength={40} value={username} onChange={event => setUsername(event.target.value)} /></label><label>Adresse e-mail EPITA<input type="email" autoComplete="email" required maxLength={254} pattern="[^\s@]+@epita\.fr" value={email} onChange={event => setEmail(event.target.value)} placeholder="prenom.nom@epita.fr" /></label></> : <label>Pseudo ou adresse e-mail<input autoComplete="username" required maxLength={254} value={identifier} onChange={event => setIdentifier(event.target.value)} autoFocus /></label>}

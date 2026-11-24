@@ -61,3 +61,16 @@
   .project-access-button { min-height:44px; }
 }
 @media(max-width:450px) { .auth-card { padding:25px; } .auth-shell { padding:18px 12px; } .auth-brand { margin-bottom:28px; } .auth-card h1 { font-size:24px; } }
+
+.mcp-consent h2 { font-size: 16px; }
+.mcp-consent select { width: 100%; min-height: 42px; }
+.mcp-consent ul { padding-left: 20px; }
+.mcp-consent a { color: var(--accent); }
+.mcp-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.mcp-consent .mcp-actions { justify-content: flex-end; }
+.mcp-connections { margin-bottom: 16px; }
+.mcp-connections h4 { margin: 14px 0 6px; }
+.mcp-connections .mcp-actions { align-items: center; margin-top: 6px; }
+.mcp-connections input { flex: 1 1 235px; min-width: 0; }
+.mcp-connection { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); }
+.mcp-connection p { margin: 0; }
